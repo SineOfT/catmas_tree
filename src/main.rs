@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use lights_material::{LightsMaterial, LightMaskItem, LIGHT_MASK_COUNT, MAX_LIGHT_ALTER_COUNT};
 use c_color_swatch::ColorSwatchMaterial;
 use c_color_picker::CColorPicker;
-use rem::RRem;
+use c_node_size::{RRem, CNodeSize, NodeSizeOperator, NodeWidth, NodeHeight};
 
 mod lights_material;
 mod c_color_swatch;
@@ -11,8 +11,9 @@ mod c_continuous_slider;
 mod c_color_picker;
 mod c_text_field;
 mod c_selectable_ui;
-mod rem;
-mod em;
+// mod rem;
+// mod em;
+mod c_node_size;
 
 mod node_orientation;
 
@@ -36,11 +37,11 @@ fn main() {
         )
         .add_systems(PostStartup,
             (
-                em::update::update_widths,
-                em::update::update_heights,
-                em::update::update_justify_sizes,
-                em::update::update_align_sizes,
-                em::update::update_font_sizes
+                c_node_size::update::update_node_sizes::<c_node_size::NodeWidth>,
+                c_node_size::update::update_node_sizes::<c_node_size::NodeHeight>,
+                c_node_size::update::update_node_sizes::<c_node_size::NodeJustify>,
+                c_node_size::update::update_node_sizes::<c_node_size::NodeAlign>,
+                c_node_size::update::update_node_sizes::<c_node_size::NodeFontSize>,
             )
         )
         .run();
@@ -99,14 +100,14 @@ fn build(
         z_index: i32
     ) -> Entity {
 
-        let color_picker_entities = (0..12).into_iter()
+        let color_picker_entities = (0..5).into_iter()
             .map(|_|
                 CColorPicker::build(
                     commands,
                     asset_server,
                     color_swatch_materials,
-                    Val::Px(300.),
-                    Val::Px(100.)
+                    CNodeSize::<NodeWidth>::new(NodeSizeOperator::Rem(12.)),
+                    CNodeSize::<NodeHeight>::new(NodeSizeOperator::Rem(7.)),
                 )
             ).collect::<Vec<_>>();
 

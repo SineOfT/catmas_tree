@@ -1,8 +1,8 @@
 use bevy::prelude::*;
 
 use super::{
+    c_node_size::{CNodeSize, NodeSizeOperator, NodeJustify},
     c_text_field::CTextField,
-    em::CEmJustifySize,
     node_orientation::NodeOrientation
 };
 
@@ -30,7 +30,7 @@ impl CContinuousSlider {
         asset_server: &AssetServer,
         slider: Self,
         orientation: NodeOrientation,
-        size: Val,
+        justify_size: CNodeSize<NodeJustify>,
         empty_color: Color,
         hover_color: Color,
         fill_color: Color
@@ -54,12 +54,12 @@ impl CContinuousSlider {
         commands
             .spawn((
                 orientation.apply(Node {
-                    width: size,
                     flex_direction: FlexDirection::Row,
                     justify_content: JustifyContent::Stretch,
                     align_items: AlignItems::Center,
                     ..default()
                 }),
+                justify_size
             ))
             .add_child(slider_entity)
             .add_child(text_field_entity)
@@ -83,7 +83,7 @@ impl CContinuousSlider {
                     flex_basis: Val::Percent(100.),
                     ..default()
                 }),
-                CEmJustifySize(0.5),
+                CNodeSize::<NodeJustify>::new(NodeSizeOperator::Em(0.5)),
                 BackgroundColor(empty_color),
                 slider
             ))

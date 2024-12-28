@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 
 use super::{
-    em::{CEmWidth, CEmHeight, CEmFontSize},
+    c_node_size::{CNodeSize, NodeSizeOperator, NodeWidth, NodeHeight, NodeFontSize},
     c_selectable_ui::CSelectableUI
 };
 
@@ -32,8 +32,9 @@ impl CTextField {
                     justify_content: JustifyContent::End,
                     ..default()
                 },
-                CEmWidth(text_field.char_count as f32 * CHARACTER_WIDTH),
-                CEmHeight(1.),
+
+                CNodeSize::<NodeWidth>::new(NodeSizeOperator::Em(text_field.char_count as f32 * CHARACTER_WIDTH)),
+                CNodeSize::<NodeHeight>::new(NodeSizeOperator::Em(1.)),
                 BackgroundColor(Color::WHITE),
             ))
             .with_child((
@@ -48,7 +49,7 @@ impl CTextField {
                     ..default()
                 },
                 TextColor(Color::BLACK),
-                CEmFontSize(1.),
+                CNodeSize::<NodeFontSize>::new(NodeSizeOperator::Em(1.)),
                 CSelectableUI::new(),
                 text_field
             ))

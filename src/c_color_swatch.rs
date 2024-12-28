@@ -4,8 +4,8 @@ use bevy::{
 };
 
 use super::{
+    c_node_size::{CNodeSize, NodeSizeOperator, NodeWidth, NodeHeight},
     c_text_field::CTextField,
-    em::CEmHeight
 };
 
 
@@ -29,7 +29,7 @@ impl ColorSwatchMaterial {
         commands: &mut Commands,
         asset_server: &AssetServer,
         color_swatch_materials: &mut Assets<ColorSwatchMaterial>,
-        size: Val
+        height: CNodeSize<NodeHeight>
     ) -> Entity {
 
         let whiteness_text_field_entity = CTextField::build(
@@ -58,21 +58,30 @@ impl ColorSwatchMaterial {
             .id();
 
         commands
-            .spawn(
+            .spawn((
                 Node {
                     flex_direction: FlexDirection::Column,
                     justify_content: JustifyContent::Center,
                     align_content: AlignContent::Center,
                     ..default()
-                }
-            )
+                },
+                height.clone_as::<NodeWidth>(),
+                height.clone(),
+            ))
             .add_child(text_field_entities)
             .with_child((
                 Node {
-                    width: size,
-                    height: size,
+                    flex_shrink: 0.,
                     ..default()
                 },
+                CNodeSize::<NodeWidth>::calc([
+                    height.operators().clone(),
+                    vec![NodeSizeOperator::Em(1.), NodeSizeOperator::Subtract]
+                ].concat()),
+                CNodeSize::<NodeHeight>::calc([
+                    height.operators().clone(),
+                    vec![NodeSizeOperator::Em(1.), NodeSizeOperator::Subtract]
+                ].concat()),
                 MaterialNode(color_swatch_materials.add(ColorSwatchMaterial::new()))
             ))
             .id()
