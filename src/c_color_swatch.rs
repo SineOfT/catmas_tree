@@ -6,6 +6,14 @@ use bevy::{
 use super::{
     c_node_size::{CNodeSize, NodeSizeOperator, NodeWidth, NodeHeight},
     c_text_field::CTextField,
+    selectable_ui::{
+        c_selectable_ui::CSelectableUI,
+        grid::{
+            GridDimension,
+            SelectableGrid,
+            ArrowInputGrid        
+        }
+    }
 };
 
 
@@ -60,18 +68,20 @@ impl ColorSwatchMaterial {
         commands
             .spawn((
                 Node {
+                    // border: UiRect::all(Val::Px(5.)),
                     flex_direction: FlexDirection::Column,
                     justify_content: JustifyContent::Center,
                     align_content: AlignContent::Center,
                     ..default()
                 },
-                height.clone_as::<NodeWidth>(),
                 height.clone(),
+                // BorderColor(Color::srgb(0., 0., 1.)),
             ))
             .add_child(text_field_entities)
             .with_child((
                 Node {
-                    flex_shrink: 0.,
+                    // border: UiRect::all(Val::Px(5.)),
+                    // margin: UiRect::all(Val::Px(50.)),
                     ..default()
                 },
                 CNodeSize::<NodeWidth>::calc([
@@ -82,7 +92,16 @@ impl ColorSwatchMaterial {
                     height.operators().clone(),
                     vec![NodeSizeOperator::Em(1.), NodeSizeOperator::Subtract]
                 ].concat()),
-                MaterialNode(color_swatch_materials.add(ColorSwatchMaterial::new()))
+                // BorderColor(Color::srgb(0., 0., 1.)),
+                Outline {
+                    width: Val::Px(5.),
+                    offset: Val::ZERO,
+                    color: Color::NONE
+                },
+                MaterialNode(color_swatch_materials.add(ColorSwatchMaterial::new())),
+                Button,
+                CSelectableUI::<SelectableGrid<2>>::new([GridDimension::X, GridDimension::Y]),
+                ArrowInputGrid::new(1.)
             ))
             .id()
     }

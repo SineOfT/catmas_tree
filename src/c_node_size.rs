@@ -40,7 +40,6 @@ pub struct NodeAlign;
 pub struct NodeFontSize;
 
 use sealed::NodeSizeMarker;
-
 mod sealed {
     use super::*;
 

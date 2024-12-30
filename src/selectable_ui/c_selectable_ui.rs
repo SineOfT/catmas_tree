@@ -1,0 +1,47 @@
+use bevy::prelude::*;
+
+use super::{
+    m_selected_ui::MSelectedUI,
+    // e_selected_updated::ESelectedUpdated
+};
+
+
+pub trait SelectableUIMarker: Sync + Send + 'static {
+    type ConstructorParam: Sync + Send;
+    type Data: Sync + Send + Clone;
+    const DEFAULT_DATA: Self::Data;
+}
+
+
+#[derive(Component)]
+pub struct CSelectableUI<M: SelectableUIMarker> {
+    param: M::ConstructorParam,
+    data: M::Data
+}
+
+impl<M: SelectableUIMarker> CSelectableUI<M> {
+    pub fn new(param: M::ConstructorParam) -> Self {
+        Self { param, data: M::DEFAULT_DATA }
+    }
+
+    pub fn param(&self) -> &M::ConstructorParam { &self.param }
+    pub fn data(&self) -> M::Data { self.data.clone() }
+
+    pub fn set_data(&mut self, data: M::Data) { self.data = data; }
+}
+
+
+pub mod update {
+    use super::*;
+
+
+    // pub fn update_on_change<M: SelectableUIMarker>(
+    //     mut ew_selected_updated: EventWriter<ESelectedUpdated<M::Data>>,
+    //     selected_ui_query: Query<(Entity, &CSelectableUI<M>), (With<MSelectedUI>, Changed<CSelectableUI<M>>)>
+    // ) {
+
+    //     for (entity, ui) in selected_ui_query.iter() {
+    //         ew_selected_updated.send(ESelectedUpdated(entity, ui.data.clone()));
+    //     }
+    // }
+}

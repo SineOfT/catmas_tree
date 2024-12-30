@@ -10,7 +10,7 @@ mod c_color_swatch;
 mod c_continuous_slider;
 mod c_color_picker;
 mod c_text_field;
-mod c_selectable_ui;
+mod selectable_ui;
 // mod rem;
 // mod em;
 mod c_node_size;
@@ -26,7 +26,9 @@ fn main() {
         .add_plugins((
             DefaultPlugins,
             UiMaterialPlugin::<LightsMaterial>::default(),
-            UiMaterialPlugin::<ColorSwatchMaterial>::default()
+            UiMaterialPlugin::<ColorSwatchMaterial>::default(),
+
+            selectable_ui::SelectableUIPlugin
         ))
         .insert_resource(RRem(20.))
         .add_systems(Startup,
@@ -100,7 +102,7 @@ fn build(
         z_index: i32
     ) -> Entity {
 
-        let color_picker_entities = (0..5).into_iter()
+        let color_picker_entities = (0..7).into_iter()
             .map(|_|
                 CColorPicker::build(
                     commands,
