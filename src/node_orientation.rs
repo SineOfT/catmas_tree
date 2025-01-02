@@ -1,5 +1,7 @@
 use bevy::prelude::*;
 
+use super::selectable_ui::grid::GridDimension;
+
 
 #[derive(Clone, Copy)]
 pub enum NodeOrientation {
@@ -30,19 +32,11 @@ impl NodeOrientation {
         }
         
         Node {
+            overflow: Overflow { x: node.overflow.y, y: node.overflow.x },
             left: node.bottom,
             right: node.top,
             top: node.left,
             bottom: node.right,
-            flex_direction: match node.flex_direction {
-                FlexDirection::Row => FlexDirection::Column,
-                FlexDirection::Column => FlexDirection::RowReverse,
-                FlexDirection::RowReverse => FlexDirection::ColumnReverse,
-                FlexDirection::ColumnReverse => FlexDirection::Row
-            },
-            margin: rotate_uirect(node.margin),
-            padding: rotate_uirect(node.padding),
-            border: rotate_uirect(node.border),
             width: node.height,
             height: node.width,
             min_width: node.min_height,
@@ -50,7 +44,36 @@ impl NodeOrientation {
             max_width: node.max_height,
             max_height: node.max_width,
             aspect_ratio: node.aspect_ratio.map(|r| 1./r),
-            overflow: Overflow { x: node.overflow.y, y: node.overflow.x },
+            align_items: match node.align_items {
+                AlignItems::Start | AlignItems::FlexStart | AlignItems::End | AlignItems::FlexEnd => match node.flex_direction {
+                    FlexDirection::Row | FlexDirection::RowReverse => AlignItems::FlexEnd,
+                    FlexDirection::Column | FlexDirection::ColumnReverse => AlignItems::FlexStart
+                },
+                align_items => align_items
+            },
+            align_self: match node.align_self {
+                AlignSelf::Start | AlignSelf::FlexStart | AlignSelf::End | AlignSelf::FlexEnd => match node.flex_direction {
+                    FlexDirection::Row | FlexDirection::RowReverse => AlignSelf::FlexEnd,
+                    FlexDirection::Column | FlexDirection::ColumnReverse => AlignSelf::FlexStart
+                },
+                align_self => align_self
+            },
+            align_content: match node.align_content {
+                AlignContent::Start | AlignContent::FlexStart | AlignContent::End | AlignContent::FlexEnd => match node.flex_direction {
+                    FlexDirection::Row | FlexDirection::RowReverse => AlignContent::FlexEnd,
+                    FlexDirection::Column | FlexDirection::ColumnReverse => AlignContent::FlexStart
+                },
+                align_content => align_content
+            },
+            margin: rotate_uirect(node.margin),
+            padding: rotate_uirect(node.padding),
+            border: rotate_uirect(node.border),
+            flex_direction: match node.flex_direction {
+                FlexDirection::Row => FlexDirection::Column,
+                FlexDirection::Column => FlexDirection::RowReverse,
+                FlexDirection::RowReverse => FlexDirection::ColumnReverse,
+                FlexDirection::ColumnReverse => FlexDirection::Row
+            },
             row_gap: node.column_gap,
             column_gap: node.row_gap,
             grid_auto_flow: match node.grid_auto_flow {
@@ -84,15 +107,30 @@ impl NodeOrientation {
             right: node.left,
             top: node.bottom,
             bottom: node.top,
+            align_items: match node.align_items {
+                AlignItems::Start | AlignItems::FlexStart => AlignItems::FlexEnd,
+                AlignItems::End | AlignItems::FlexEnd => AlignItems::FlexStart,
+                align_items => align_items
+            },
+            align_self: match node.align_self {
+                AlignSelf::Start | AlignSelf::FlexStart => AlignSelf::FlexEnd,
+                AlignSelf::End | AlignSelf::FlexEnd => AlignSelf::FlexStart,
+                align_self => align_self
+            },
+            align_content: match node.align_content {
+                AlignContent::Start | AlignContent::FlexStart => AlignContent::FlexEnd,
+                AlignContent::End | AlignContent::FlexEnd => AlignContent::FlexStart,
+                align_content => align_content
+            },
+            margin: rotate_uirect(node.margin),
+            padding: rotate_uirect(node.padding),
+            border: rotate_uirect(node.border),
             flex_direction: match node.flex_direction {
                 FlexDirection::Row => FlexDirection::RowReverse,
                 FlexDirection::Column => FlexDirection::ColumnReverse,
                 FlexDirection::RowReverse => FlexDirection::Row,
                 FlexDirection::ColumnReverse => FlexDirection::Column
             },
-            margin: rotate_uirect(node.margin),
-            padding: rotate_uirect(node.padding),
-            border: rotate_uirect(node.border),
             ..node
         }
     }
@@ -108,19 +146,11 @@ impl NodeOrientation {
         }
         
         Node {
+            overflow: Overflow { x: node.overflow.y, y: node.overflow.x },
             left: node.top,
             right: node.bottom,
             top: node.right,
             bottom: node.left,
-            flex_direction: match node.flex_direction {
-                FlexDirection::Row => FlexDirection::ColumnReverse,
-                FlexDirection::Column => FlexDirection::Row,
-                FlexDirection::RowReverse => FlexDirection::Column,
-                FlexDirection::ColumnReverse => FlexDirection::RowReverse
-            },
-            margin: rotate_uirect(node.margin),
-            padding: rotate_uirect(node.padding),
-            border: rotate_uirect(node.border),
             width: node.height,
             height: node.width,
             min_width: node.min_height,
@@ -128,7 +158,36 @@ impl NodeOrientation {
             max_width: node.max_height,
             max_height: node.max_width,
             aspect_ratio: node.aspect_ratio.map(|r| 1./r),
-            overflow: Overflow { x: node.overflow.y, y: node.overflow.x },
+            align_items: match node.align_items {
+                AlignItems::Start | AlignItems::FlexStart | AlignItems::End | AlignItems::FlexEnd => match node.flex_direction {
+                    FlexDirection::Row | FlexDirection::RowReverse => AlignItems::FlexStart,
+                    FlexDirection::Column | FlexDirection::ColumnReverse => AlignItems::FlexEnd
+                },
+                align_items => align_items
+            },
+            align_self: match node.align_self {
+                AlignSelf::Start | AlignSelf::FlexStart | AlignSelf::End | AlignSelf::FlexEnd => match node.flex_direction {
+                    FlexDirection::Row | FlexDirection::RowReverse => AlignSelf::FlexStart,
+                    FlexDirection::Column | FlexDirection::ColumnReverse => AlignSelf::FlexEnd
+                },
+                align_self => align_self
+            },
+            align_content: match node.align_content {
+                AlignContent::Start | AlignContent::FlexStart | AlignContent::End | AlignContent::FlexEnd => match node.flex_direction {
+                    FlexDirection::Row | FlexDirection::RowReverse => AlignContent::FlexStart,
+                    FlexDirection::Column | FlexDirection::ColumnReverse => AlignContent::FlexEnd
+                },
+                align_content => align_content
+            },
+            margin: rotate_uirect(node.margin),
+            padding: rotate_uirect(node.padding),
+            border: rotate_uirect(node.border),
+            flex_direction: match node.flex_direction {
+                FlexDirection::Row => FlexDirection::ColumnReverse,
+                FlexDirection::Column => FlexDirection::Row,
+                FlexDirection::RowReverse => FlexDirection::Column,
+                FlexDirection::ColumnReverse => FlexDirection::RowReverse
+            },
             row_gap: node.column_gap,
             column_gap: node.row_gap,
             grid_auto_flow: match node.grid_auto_flow {
@@ -144,6 +203,57 @@ impl NodeOrientation {
             grid_row: node.grid_column,
             grid_column: node.grid_row,
             ..node
+        }
+    }
+
+
+    pub fn apply_to_grid_dimensions<const N: usize>(&self, grid_dimensions: [GridDimension; N]) -> [GridDimension; N] {
+        match self {
+            Self::Zero => grid_dimensions,
+            Self::OneForth => grid_dimensions.map(|dimension| match dimension {
+                GridDimension::X => GridDimension::Y,
+                GridDimension::Y => GridDimension::NegX,
+                GridDimension::NegX => GridDimension::NegY,
+                GridDimension::NegY => GridDimension::X,
+                dimension => dimension
+            }),
+            Self::OneHalf => grid_dimensions.map(|dimension| match dimension {
+                GridDimension::X => GridDimension::NegX,
+                GridDimension::Y => GridDimension::NegY,
+                GridDimension::NegX => GridDimension::X,
+                GridDimension::NegY => GridDimension::Y,
+                dimension => dimension
+            }),
+            Self::ThreeForth => grid_dimensions.map(|dimension| match dimension {
+                GridDimension::X => GridDimension::NegY,
+                GridDimension::Y => GridDimension::X,
+                GridDimension::NegX => GridDimension::Y,
+                GridDimension::NegY => GridDimension::NegX,
+                dimension => dimension
+            })
+        }
+    }
+
+
+    pub fn set_justify(node: &mut Node, justify: Val) {
+        match node.flex_direction {
+            FlexDirection::Row | FlexDirection::RowReverse => {
+                node.width = justify;
+            }
+            FlexDirection::Column | FlexDirection::ColumnReverse => {
+                node.height = justify;
+            }
+        }
+    }
+
+    pub fn set_align(node: &mut Node, align: Val) {
+        match node.flex_direction {
+            FlexDirection::Row | FlexDirection::RowReverse => {
+                node.height = align;
+            }
+            FlexDirection::Column | FlexDirection::ColumnReverse => {
+                node.width = align;
+            }
         }
     }
 }

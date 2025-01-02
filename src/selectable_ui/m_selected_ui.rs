@@ -20,7 +20,6 @@ pub mod update {
         for (entity, interaction) in selectable_node_query.iter() {
             match *interaction {
                 Interaction::Pressed => {
-                    info!("Pressed");
                     for selected_entity in selected_node_query.iter() {
                         commands.entity(selected_entity).remove::<MSelectedUI>();
                     }
@@ -39,7 +38,6 @@ pub mod update {
     ) {
 
         for mut outline in selected_node_query.iter_mut() {
-            info!("Updated");
             outline.color = Color::srgb(0., 0., 1.);
         }
     }
@@ -52,7 +50,6 @@ pub mod update {
         for entity in deselected.read() {
             let Ok(mut outline) = node_query.get_mut(entity)
                 else { warn!("deselected entity doesn't exist"); continue; };
-            info!("Updated");
             outline.color = Color::NONE;
         }
     }

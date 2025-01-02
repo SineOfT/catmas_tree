@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 use super::{
     m_selected_ui::MSelectedUI,
-    // e_selected_updated::ESelectedUpdated
+    e_selected_changed::ESelectedChanged
 };
 
 
@@ -25,8 +25,8 @@ impl<M: SelectableUIMarker> CSelectableUI<M> {
     }
 
     pub fn param(&self) -> &M::ConstructorParam { &self.param }
-    pub fn data(&self) -> M::Data { self.data.clone() }
-
+    pub fn data(&self) -> &M::Data { &self.data }
+    pub fn data_mut(&mut self) -> &mut M::Data { &mut self.data }
     pub fn set_data(&mut self, data: M::Data) { self.data = data; }
 }
 
@@ -35,13 +35,13 @@ pub mod update {
     use super::*;
 
 
-    // pub fn update_on_change<M: SelectableUIMarker>(
-    //     mut ew_selected_updated: EventWriter<ESelectedUpdated<M::Data>>,
-    //     selected_ui_query: Query<(Entity, &CSelectableUI<M>), (With<MSelectedUI>, Changed<CSelectableUI<M>>)>
-    // ) {
+    pub fn update_on_change<M: SelectableUIMarker>(
+        mut ew_selected_changed: EventWriter<ESelectedChanged<M>>,
+        selected_ui_query: Query<(Entity, &CSelectableUI<M>), (With<MSelectedUI>, Changed<CSelectableUI<M>>)>
+    ) {
 
-    //     for (entity, ui) in selected_ui_query.iter() {
-    //         ew_selected_updated.send(ESelectedUpdated(entity, ui.data.clone()));
-    //     }
-    // }
+        for (entity, ui) in selected_ui_query.iter() {
+            ew_selected_changed.send(ESelectedChanged { entity, data: ui.data.clone() });
+        }
+    }
 }

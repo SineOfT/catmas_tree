@@ -9,7 +9,7 @@ mod lights_material;
 mod c_color_swatch;
 mod c_continuous_slider;
 mod c_color_picker;
-mod c_text_field;
+mod digit_field;
 mod selectable_ui;
 // mod rem;
 // mod em;
@@ -30,6 +30,7 @@ fn main() {
 
             selectable_ui::SelectableUIPlugin
         ))
+        .add_event::<digit_field::e_digit_changed::EDigitChanged>()
         .insert_resource(RRem(20.))
         .add_systems(Startup,
             (
@@ -43,7 +44,19 @@ fn main() {
                 c_node_size::update::update_node_sizes::<c_node_size::NodeHeight>,
                 c_node_size::update::update_node_sizes::<c_node_size::NodeJustify>,
                 c_node_size::update::update_node_sizes::<c_node_size::NodeAlign>,
-                c_node_size::update::update_node_sizes::<c_node_size::NodeFontSize>,
+                c_node_size::update::update_node_sizes::<c_node_size::NodeFontSize>
+            )
+        )
+        .add_systems(Update,
+            (
+                c_continuous_slider::update::update_slider_on_selected_changed,
+
+                digit_field::c_digit_field::update::update_text_on_selected_changed::<1>,
+                digit_field::c_digit_field::update::update_text_on_selected_changed::<2>,
+                digit_field::c_digit_field::update::update_text_on_selected_changed::<3>,
+                digit_field::c_digit_field::update::update_text_on_selected_changed::<4>,
+                digit_field::c_digit_field::update::update_text_on_selected_changed::<5>,
+                digit_field::c_digit_field::update::update_text_on_selected_changed::<6>
             )
         )
         .run();
@@ -119,9 +132,9 @@ fn build(
                     width: Val::Percent(100.),
                     height: Val::Percent(100.),
                     flex_direction: FlexDirection::Column,
-                    justify_content: JustifyContent::Start,
-                    align_content: AlignContent::Start,
-                    align_items: AlignItems::Start,
+                    justify_content: JustifyContent::FlexStart,
+                    align_content: AlignContent::FlexStart,
+                    align_items: AlignItems::FlexStart,
                     flex_wrap: FlexWrap::Wrap,
                     row_gap: Val::ZERO,
                     column_gap: Val::ZERO,

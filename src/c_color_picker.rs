@@ -1,6 +1,7 @@
 use bevy::prelude::*;
 
 use super::{
+    selectable_ui::digit_field::FieldDigit,
     c_node_size::{CNodeSize, NodeSizeOperator, NodeWidth, NodeHeight, NodeJustify},
     c_continuous_slider::CContinuousSlider,
     c_color_swatch::ColorSwatchMaterial,
@@ -18,6 +19,12 @@ struct MColorDisplay;
 
 
 impl CColorPicker {
+    const DIGIT_COUNT: usize = 3;
+    const DIGIT_DECIMAL_POSITION: Option<usize> = Some(0);
+    const DIGIT_MIN_VALUE: [FieldDigit; Self::DIGIT_COUNT] = [FieldDigit::Zero, FieldDigit::Zero, FieldDigit::Zero];
+    const DIGIT_MAX_VALUE: [FieldDigit; Self::DIGIT_COUNT] = [FieldDigit::One, FieldDigit::Zero, FieldDigit::Zero];
+    
+
     pub fn build(
         commands: &mut Commands,
         asset_server: &AssetServer,
@@ -33,24 +40,27 @@ impl CColorPicker {
             height.clone()
         );
 
-        let hue_slider_entity = CContinuousSlider::build(
+        let hue_slider_entity = CContinuousSlider::build::<{Self::DIGIT_COUNT}>(
             commands,
             asset_server,
-            CContinuousSlider::new(0., 1., 2),
             NodeOrientation::ThreeForth,
             height.clone_as::<NodeJustify>(),
+            Self::DIGIT_MIN_VALUE,
+            Self::DIGIT_MAX_VALUE,
+            Self::DIGIT_DECIMAL_POSITION,
             Color::srgb(0.8, 0.8, 0.8),
             Color::srgb(0.5, 0.5, 0.5),
             Color::srgb(0.2, 0.2, 0.2)
         );
 
-
-        let alpha_slider_entity = CContinuousSlider::build(
+        let alpha_slider_entity = CContinuousSlider::build::<{Self::DIGIT_COUNT}>(
             commands,
             asset_server,
-            CContinuousSlider::new(0., 1., 2),
             NodeOrientation::ThreeForth,
             height.clone_as::<NodeJustify>(),
+            Self::DIGIT_MIN_VALUE,
+            Self::DIGIT_MAX_VALUE,
+            Self::DIGIT_DECIMAL_POSITION,
             Color::srgb(0.8, 0.8, 0.8),
             Color::srgb(0.5, 0.5, 0.5),
             Color::srgb(0.2, 0.2, 0.2)
