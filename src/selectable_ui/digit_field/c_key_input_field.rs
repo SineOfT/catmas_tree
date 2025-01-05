@@ -1,103 +1,18 @@
 use bevy::prelude::*;
 
-use super::{
-    c_selectable_ui::{CSelectableUI, SelectableUIMarker},
+use super::{ECursorChanged, EDigitsChanged, SelectableDigitField};
+
+use super::super::{
+    c_selectable_ui::CSelectableUI,
     m_selected_ui::MSelectedUI
 };
 
+use super::super::super::s_field_digit::FieldDigit;
 
-#[derive(Clone, Copy, PartialEq, PartialOrd)]
-pub enum FieldDigit {
-    Zero,
-    One,
-    Two,
-    Three,
-    Four,
-    Five,
-    Six,
-    Seven,
-    Eight,
-    Nine
-}
-
-impl FieldDigit {
-    fn as_char(&self) -> char {
-        match self {
-            Self::Zero  => '0',
-            Self::One   => '1',
-            Self::Two   => '2',
-            Self::Three => '3',
-            Self::Four  => '4',
-            Self::Five  => '5',
-            Self::Six   => '6',
-            Self::Seven => '7',
-            Self::Eight => '8',
-            Self::Nine  => '9'
-        }
-    }
-
-    pub fn as_num<N: From<u8>>(&self) -> N {
-        match self {
-            Self::Zero  => 0,
-            Self::One   => 1,
-            Self::Two   => 2,
-            Self::Three => 3,
-            Self::Four  => 4,
-            Self::Five  => 5,
-            Self::Six   => 6,
-            Self::Seven => 7,
-            Self::Eight => 8,
-            Self::Nine  => 9
-        }.into()
-    }
-}
-
-
-pub struct DigitFieldParam<const N: usize> {
-    min_digits: [FieldDigit; N],
-    max_digits: [FieldDigit; N],
-    decimal_position: Option<usize>
-}
-
-impl<const N: usize> DigitFieldParam<N> {    
-    pub fn new(min_digits: [FieldDigit; N], max_digits: [FieldDigit; N], decimal_position: Option<usize>) -> Self {
-        Self { min_digits, max_digits, decimal_position }
-    }
-}
-
-
-#[derive(Clone)]
-pub struct DigitFieldData<const N: usize> {
-    digits: [FieldDigit; N],
-    cursor: usize
-}
-
-impl<const N: usize> DigitFieldData<N> {
-    pub const DEFAULT: Self = Self { digits: [FieldDigit::Zero; N], cursor: 0 };
-
-    pub fn new(digits: [FieldDigit; N]) -> Self {
-        Self { digits, cursor: 0 }
-    }
-
-    pub fn cursor(&self) -> usize { self.cursor }
-
-    pub fn digits_string(&self) -> String {
-        String::from_iter(self.digits.iter().map(|digit| digit.as_char()))
-    }
-}
-
-
-pub struct SelectableDigitField<const N: usize>;
-
-impl<const N: usize> SelectableUIMarker for SelectableDigitField<N> {
-    type ConstructorParam = DigitFieldParam<N>;
-    type Data = DigitFieldData<N>;
-    const DEFAULT_DATA: Self::Data = DigitFieldData::DEFAULT;
-}
 
 
 #[derive(Component)]
-pub struct KeyInputField;
+pub struct CKeyInputField;
 
 
 pub mod update {
@@ -162,16 +77,21 @@ pub mod update {
     }
 
     pub fn update_selected_key_input_field<const N: usize>(
+        mut commands: Commands,
         keys: Res<ButtonInput<KeyCode>>,
-        mut selected_digit_field_query: Query<(&mut CSelectableUI<SelectableDigitField<N>>, &KeyInputField), With<MSelectedUI>>
+        mut selected_digit_field_query: Query<(Entity, &mut CSelectableUI<SelectableDigitField<N>>, &CKeyInputField), With<MSelectedUI>>
     ) {
 
-        for (mut digit_field, key_input) in selected_digit_field_query.iter_mut() {                        
-            let DigitFieldParam { min_digits, max_digits, decimal_position } = digit_field.param();
-            let DigitFieldData { digits: prev_digits, cursor: prev_cursor } = digit_field.data();
+        for (entity, mut digit_field, key_input) in selected_digit_field_query.iter_mut() {                        
+            let param = digit_field.param();
+            let data = digit_field.data();
+
+            let decimal_position = param.decimal_position();
+            let prev_cursor = data.cursor();
+
+            let mut new_cursor = prev_cursor as usize;
             let mut digit_inputs = Vec::new();
             let mut is_deleted = false;
-            let mut new_cursor = *prev_cursor as usize;
             let mut is_pressed = false;
 
             for key in keys.get_just_pressed() {
@@ -202,6 +122,9 @@ pub mod update {
 
             info!("pressed");
 
+            let min_digits = param.min_digits();
+            let max_digits = param.max_digits();
+            let prev_digits = data.digits();
             let mut new_digits = None;
 
             if is_deleted {
@@ -223,12 +146,20 @@ pub mod update {
                 false,
                 |digits| !equal_digits(prev_digits, &digits)
             );
-            let cursor_changed = *prev_cursor != new_cursor;
+            let cursor_changed = prev_cursor != new_cursor;
 
             let prev_data = digit_field.data_mut();
 
-            if digits_changed { prev_data.digits = new_digits.unwrap(); }
-            if cursor_changed { prev_data.cursor = new_cursor; }
+            if digits_changed {
+                let new_digits = new_digits.unwrap();
+                prev_data.set_digits(new_digits.clone());
+                commands.trigger_targets(EDigitsChanged(new_digits), entity);
+            }
+
+            if cursor_changed {
+                prev_data.set_cursor(new_cursor);
+                commands.trigger_targets(ECursorChanged(new_cursor), entity);
+            }
         }
     }
 }

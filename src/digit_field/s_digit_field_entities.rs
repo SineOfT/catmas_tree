@@ -4,10 +4,10 @@ use super::super::{
     c_node_size::{CNodeSize, NodeSizeOperator, NodeWidth, NodeHeight, NodeFontSize},
     selectable_ui::{
         SelectableUIBundle,
-        e_selected_changed::ESelectedChanged,
-        c_selectable_ui::{CSelectableUI, SelectableUIMarker},
-        digit_field::{SelectableDigitField, DigitFieldParam, DigitFieldData, FieldDigit, KeyInputField}
-    }
+        c_selectable_ui::CSelectableUI,
+        digit_field::{ECursorUpdated, EDigitsUpdated, SelectableDigitField, DigitFieldParam, CKeyInputField}
+    },
+    s_field_digit::FieldDigit
 };
 
 
@@ -15,23 +15,22 @@ const FONT_PATH: &'static str = "source_code_pro.ttf";
 const CHARACTER_WIDTH: f32 = 0.55;
 
 
-#[derive(Component)]
-pub struct CDigitField {
-    text_entity: Entity,
-    cursor_entity: Entity,
-    char_count: u8,
-    decimal_position: Option<usize>,
-    value: f32
+pub struct DigitFieldEntities {
+    field_entity: Entity,
+    cursor_entity: Entity
 }
 
-impl CDigitField {
+impl DigitFieldEntities {
+    pub fn field_entity(&self) -> Entity { self.field_entity }
+    pub fn cursor_entity(&self) -> Entity { self.cursor_entity }
+
     pub fn build<const N: usize>(
         commands: &mut Commands,
         asset_server: &AssetServer,
         min_digits: [FieldDigit; N],
         max_digits: [FieldDigit; N],
         mut decimal_position: Option<usize>
-    ) -> Entity {
+    ) -> (Entity, Self) {
 
         if let Some(position) = decimal_position {
             if position >= N-1 {
@@ -40,7 +39,7 @@ impl CDigitField {
             }
         }
 
-        let text_entity = commands
+        let field_entity = commands
             .spawn((
                 Node::default(),
                 Text::new("0".repeat(N)),
@@ -56,6 +55,7 @@ impl CDigitField {
                 CNodeSize::<NodeHeight>::new(NodeSizeOperator::Em(0.8)),
                 CNodeSize::<NodeFontSize>::new(NodeSizeOperator::Em(0.8))
             ))
+            .observe(trigger::update_digits_text::<N>)
             .id();
 
         let decimal_entity = decimal_position.map(|decimal_position| {
@@ -82,6 +82,7 @@ impl CDigitField {
                 BackgroundColor(Color::BLACK),
                 CNodeSize::<NodeHeight>::new(NodeSizeOperator::Em(0.1))
             ))
+            .observe(trigger::update_cursor_node::<N>)
             .id();
 
         let mut entity_commands = commands
@@ -103,49 +104,51 @@ impl CDigitField {
                     )),
                     Val::Px(5.),
                 ),
-                KeyInputField,
-                CDigitField { text_entity, cursor_entity, char_count: N as u8, decimal_position, value: 0. }
+                CKeyInputField
             ));
         
-        entity_commands.add_child(text_entity);
+        entity_commands.add_child(field_entity);
         if let Some(decimal_entity) = decimal_entity { entity_commands.add_child(decimal_entity); }
         entity_commands.add_child(cursor_entity);
         
-        entity_commands.id()
+        (entity_commands.id(), Self { field_entity, cursor_entity })
     }
 }
 
 
-pub mod update {
+mod trigger {
     use super::*;
 
 
-    pub fn update_text_on_selected_changed<const N: usize>(
-        mut er_selected_changed: EventReader<ESelectedChanged<SelectableDigitField<N>>>,
-        mut digit_field_query: Query<&mut CDigitField>,
-        mut text_query: Query<&mut Text>,
+    fn digits_to_string<const N: usize>(digits: [FieldDigit; N]) -> String {
+        String::from_iter(digits.iter().map(|digit| digit.as_char()))
+    }
+
+    pub fn update_digits_text<const N: usize>(
+        trigger: Trigger<EDigitsUpdated<N>>,
+        mut text_query: Query<&mut Text>
+    ) {
+
+        let Ok(mut text) = text_query.get_mut(trigger.entity())
+            else { warn!("updated digit has no text"); return; };
+
+        let digits = trigger.event().0;
+        let digits_string = digits_to_string(digits);
+
+        text.0 = digits_string;
+    }
+
+
+    pub fn update_cursor_node<const N: usize>(
+        trigger: Trigger<ECursorUpdated>,
         mut node_query: Query<&mut Node>
     ) {
 
-        for ESelectedChanged { entity, data } in er_selected_changed.read() {
-            let Ok(mut digit_field) = digit_field_query.get_mut(*entity)
-                else { warn!("selected digit field doesn't exist"); continue; };
-            let Ok(mut text) = text_query.get_mut(digit_field.text_entity)
-                else { warn!("digit field's text doesn't exist"); continue; };
-            let Ok(mut cursor_node) = node_query.get_mut(digit_field.cursor_entity)
-                else { warn!("digit field's cursor doesn't exist"); continue; };
+        let Ok(mut node) = node_query.get_mut(trigger.entity())
+            else { warn!("updated cursor has no node"); return; };
 
-            let digits_string = data.digits_string();
-            let Ok(digits_value) = digits_string.parse()
-                else { warn!("digits string {} is not a valid float", digits_string); continue; };
-            
-            let cursor = data.cursor();
-            info!(digits_string);
-            info!(cursor);
-            
-            digit_field.value = digits_value;
-            text.0 = digits_string;
-            cursor_node.left = Val::Percent(100. / (N as f32) * (cursor as f32));
-        }
+        let cursor = trigger.event().0;
+        
+        node.left = Val::Percent(100. / (N as f32) * (cursor as f32));
     }
 }

@@ -1,19 +1,20 @@
 use bevy::prelude::*;
 
 use lights_material::{LightsMaterial, LightMaskItem, LIGHT_MASK_COUNT, MAX_LIGHT_ALTER_COUNT};
-use c_color_swatch::ColorSwatchMaterial;
-use c_color_picker::CColorPicker;
+use color_picker::l_color_swatch::LColorSwatch;
 use c_node_size::{RRem, CNodeSize, NodeSizeOperator, NodeWidth, NodeHeight};
+use color_picker::c_color_picker_data::CColorPickerData;
+
 
 mod lights_material;
-mod c_color_swatch;
-mod c_continuous_slider;
-mod c_color_picker;
+mod continuous_slider;
+mod color_picker;
 mod digit_field;
 mod selectable_ui;
 // mod rem;
 // mod em;
 mod c_node_size;
+mod s_field_digit;
 
 mod node_orientation;
 
@@ -26,9 +27,10 @@ fn main() {
         .add_plugins((
             DefaultPlugins,
             UiMaterialPlugin::<LightsMaterial>::default(),
-            UiMaterialPlugin::<ColorSwatchMaterial>::default(),
-
-            selectable_ui::SelectableUIPlugin
+            selectable_ui::SelectableUIPlugin,
+            digit_field::DigitFieldPlugin,
+            continuous_slider::ContinuousSliderPlugin,
+            color_picker::ColorPickerPlugin,
         ))
         .add_event::<digit_field::e_digit_changed::EDigitChanged>()
         .insert_resource(RRem(20.))
@@ -47,18 +49,18 @@ fn main() {
                 c_node_size::update::update_node_sizes::<c_node_size::NodeFontSize>
             )
         )
-        .add_systems(Update,
-            (
-                c_continuous_slider::update::update_slider_on_selected_changed,
+        // .add_systems(Update,
+        //     (
+        //         // continuous_slider::s_continuous_slider_entities::update::update_slider_on_selected_changed,
 
-                digit_field::c_digit_field::update::update_text_on_selected_changed::<1>,
-                digit_field::c_digit_field::update::update_text_on_selected_changed::<2>,
-                digit_field::c_digit_field::update::update_text_on_selected_changed::<3>,
-                digit_field::c_digit_field::update::update_text_on_selected_changed::<4>,
-                digit_field::c_digit_field::update::update_text_on_selected_changed::<5>,
-                digit_field::c_digit_field::update::update_text_on_selected_changed::<6>
-            )
-        )
+        //         // digit_field::s_digit_field_entities::update::update_text_on_selected_changed::<1>,
+        //         // digit_field::s_digit_field_entities::update::update_text_on_selected_changed::<2>,
+        //         // digit_field::s_digit_field_entities::update::update_text_on_selected_changed::<3>,
+        //         // digit_field::s_digit_field_entities::update::update_text_on_selected_changed::<4>,
+        //         // digit_field::s_digit_field_entities::update::update_text_on_selected_changed::<5>,
+        //         // digit_field::s_digit_field_entities::update::update_text_on_selected_changed::<6>
+        //     )
+        // )
         .run();
 }
 
@@ -73,7 +75,7 @@ fn build(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
     mut lights_materials: ResMut<Assets<LightsMaterial>>,
-    mut color_swatch_materials: ResMut<Assets<ColorSwatchMaterial>>
+    mut color_swatch_materials: ResMut<Assets<LColorSwatch>>
 ) {
 
     fn build_image(
@@ -111,13 +113,13 @@ fn build(
     fn build_lights_menu(
         commands: &mut Commands,
         asset_server: &AssetServer,
-        color_swatch_materials: &mut Assets<ColorSwatchMaterial>,
+        color_swatch_materials: &mut Assets<LColorSwatch>,
         z_index: i32
     ) -> Entity {
 
         let color_picker_entities = (0..7).into_iter()
             .map(|_|
-                CColorPicker::build(
+                CColorPickerData::build(
                     commands,
                     asset_server,
                     color_swatch_materials,

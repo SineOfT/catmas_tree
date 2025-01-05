@@ -1,14 +1,17 @@
 use bevy::prelude::*;
 
 use super::{
+    c_slider_data::CSliderData
+};
+
+use super::super::{
     selectable_ui::{
         SelectableUIBundle,
         grid::{
             GridDimension,
             SelectableGrid,
-            ArrowInputGrid
+            CArrowInputGrid
         },
-        digit_field::FieldDigit,
         c_selectable_ui::CSelectableUI,
         e_selected_changed::ESelectedChanged
     },
@@ -16,26 +19,23 @@ use super::{
     c_node_size::{CNodeSize, NodeSizeOperator, NodeJustify},
     digit_field::{
         e_digit_changed::EDigitChanged,
-        c_digit_field::CDigitField
-    }
+        s_digit_field_entities::DigitFieldEntities
+    },
+    s_field_digit::FieldDigit
 };
 
 
-#[derive(Component)]
-pub struct CContinuousSlider {
+pub struct ContinuousSliderEntities {
     hover_slider_entity: Entity,
     fill_slider_entity: Entity,
-    t_field_entity: Entity,
-    min_value: f32,
-    max_value: f32,
-    t: f32
+    t_field_entities: DigitFieldEntities
 }
 
-impl CContinuousSlider {    
-    pub fn get_value(&self) -> f32 {
-        f32::lerp(self.min_value, self.max_value, self.t)
-    }
+impl ContinuousSliderEntities {
 
+    pub fn hover_slider_entity(&self) -> Entity { self.hover_slider_entity }
+    pub fn fill_slider_entity(&self) -> Entity { self.fill_slider_entity }
+    pub fn t_field_entities(&self) -> &DigitFieldEntities { &self.t_field_entities }
 
     fn get_value_of_digits<const N: usize>(digits: [FieldDigit; N], decimal_position: Option<usize>) -> f32 {
         let decimal_position = decimal_position.unwrap_or(N-1) as i32;
@@ -58,9 +58,9 @@ impl CContinuousSlider {
         empty_color: Color,
         hover_color: Color,
         fill_color: Color
-    ) -> Entity {
+    ) -> (Entity, Self) {
 
-        let t_field_entity = CDigitField::build::<N>(
+        let (t_field_entity, t_field_entities) = DigitFieldEntities::build::<N>(
             commands,
             asset_server,
             min_digits,
@@ -108,21 +108,13 @@ impl CContinuousSlider {
                     CSelectableUI::<SelectableGrid<1>>::new(orientation.apply_to_grid_dimensions([GridDimension::X])),
                     Val::Px(5.),
                 ),
-                ArrowInputGrid::new(1.),
-                Self {
-                    hover_slider_entity,
-                    fill_slider_entity,
-                    t_field_entity,
-                    min_value: Self::get_value_of_digits(min_digits, decimal_position),
-                    max_value: Self::get_value_of_digits(max_digits, decimal_position),
-                    t: 0.
-                }
+                CArrowInputGrid::new(1.),
             ))
             .add_child(hover_slider_entity)
             .add_child(fill_slider_entity)
             .id();
-
-        commands
+ 
+        let entity = commands
             .spawn((
                 orientation.apply(Node {
                     flex_direction: FlexDirection::Row,
@@ -134,8 +126,41 @@ impl CContinuousSlider {
             ))
             .add_child(slider_entity)
             .add_child(t_field_entity)
-            .id()
+            .id();
+
+        (entity, Self { hover_slider_entity, fill_slider_entity, t_field_entities })
     }
+
+//     pub fn build_complete<const N: usize>(
+//         commands: &mut Commands,
+//         asset_server: &AssetServer,
+//         orientation: NodeOrientation,
+//         justify_size: CNodeSize<NodeJustify>,
+//         min_digits: [FieldDigit; N],
+//         max_digits: [FieldDigit; N],
+//         decimal_position: Option<usize>,
+//         empty_color: Color,
+//         hover_color: Color,
+//         fill_color: Color,
+//     ) -> Entity {
+
+//         let (entity, slider_entities) = Self::build::<N>(
+//             commands,
+//             asset_server,
+//             orientation,
+//             justify_size,
+//             min_digits,
+//             max_digits,
+//             decimal_position,
+//             empty_color,
+//             hover_color,
+//             fill_color
+//         );
+
+//         commands.entity(entity).insert(slider_entities);
+
+//         entity
+//     }
 }
 
 
@@ -143,26 +168,26 @@ pub mod update {
     use super::*;
 
 
-    pub fn update_slider_on_selected_changed(
-        mut er_selected_changed: EventReader<ESelectedChanged<SelectableGrid<1>>>,
-        mut ew_digit_changed: EventWriter<EDigitChanged>,
-        mut slider_query: Query<&mut CContinuousSlider>,
-        mut node_query: Query<&mut Node>,
-    ) {
+    // pub fn update_slider_on_selected_changed(
+    //     mut er_selected_changed: EventReader<ESelectedChanged<SelectableGrid<1>>>,
+    //     mut ew_digit_changed: EventWriter<EDigitChanged>,
+    //     mut slider_query: Query<&mut CContinuousSlider>,
+    //     mut node_query: Query<&mut Node>,
+    // ) {
 
-        for &ESelectedChanged { entity, data } in er_selected_changed.read() {
-            let t = data[0];
+    //     for &ESelectedChanged { entity, data } in er_selected_changed.read() {
+    //         let t = data[0];
             
-            let Ok(mut slider) = slider_query.get_mut(entity)
-                else { warn!("selected slider doesn't exist"); continue; };
+    //         let Ok(mut slider) = slider_query.get_mut(entity)
+    //             else { warn!("selected slider doesn't exist"); continue; };
                 
-            let Ok(mut fill_node) = node_query.get_mut(slider.fill_slider_entity)
-                else { warn!("slider's fill slider doesn't exist"); continue; };
+    //         let Ok(mut fill_node) = node_query.get_mut(slider.fill_slider_entity)
+    //             else { warn!("slider's fill slider doesn't exist"); continue; };
             
-            slider.t = t;
-            NodeOrientation::set_justify(&mut fill_node, Val::Percent(t * 100.));
+    //         slider.t = t;
+    //         NodeOrientation::set_justify(&mut fill_node, Val::Percent(t * 100.));
 
-            ew_digit_changed.send(EDigitChanged(slider.get_value()));
-        }
-    }
+    //         ew_digit_changed.send(EDigitChanged(slider.get_value()));
+    //     }
+    // }
 }
