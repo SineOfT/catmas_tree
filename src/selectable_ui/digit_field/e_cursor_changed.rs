@@ -2,14 +2,19 @@ use bevy::prelude::*;
 
 
 #[derive(Component)]
-pub struct ECursorChanged(pub usize);
+pub struct ECursorChanged<T: Sync + Send + Copy + 'static = ()> {
+    pub cursor: usize,
+    pub tag: T
+}
 
-impl Event for ECursorChanged {
+impl<T: Sync + Send + Copy + 'static> Event for ECursorChanged<T> {
     type Traversal = &'static Parent;
 
     const AUTO_PROPAGATE: bool = true;
 }
 
 
-#[derive(Event)]
-pub struct ECursorUpdated(pub usize);
+#[derive(Event, Clone)]
+pub struct ECursorUpdated{
+    pub cursor: usize
+}

@@ -1,10 +1,16 @@
 use bevy::prelude::*;
 
+pub use c_color_picker_data::CColorPickerData;
+pub use c_color_picker_entities::CColorPickerEntities;
+pub use l_color_swatch::LColorSwatch;
 
-pub mod c_color_picker_data;
-pub mod l_color_swatch;
-pub mod s_color_picker_entities;
-pub mod s_color_swatch_entities;
+
+mod c_color_picker_data;
+mod c_color_picker_entities;
+mod c_color_swatch_entities;
+mod e_color_picker_updated;
+mod l_color_swatch;
+mod consts;
 
 
 pub struct ColorPickerPlugin;

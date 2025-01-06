@@ -1,11 +1,11 @@
-use bevy::prelude::*;
-
-use super::{EGridChanged, SelectableGrid};
-
-use super::super::{
-    c_selectable_ui::CSelectableUI,
-    m_selected_ui::MSelectedUI
+use bevy::{
+    prelude::*,
+    input::keyboard::{Key, KeyboardInput}
 };
+
+use super::{EGridChanged, CGrid};
+
+use super::super::m_selectable_ui::MSelectedUI;
 
 
 #[derive(Component)]
@@ -25,18 +25,19 @@ pub mod update {
 
 
     pub fn update_selected_arrow_input_grid<const N: usize>(
+        // trigger: Trigger<KeyboardInput>,
         mut commands: Commands,
         time: Res<Time>,
         keys: Res<ButtonInput<KeyCode>>,
-        mut selected_grid_query: Query<(Entity, &mut CSelectableUI<SelectableGrid<N>>, &CArrowInputGrid), With<MSelectedUI>>
+        selected_grid_query: Query<(Entity, &CGrid<N>, &CArrowInputGrid), With<MSelectedUI>>
     ) {
 
-        for (entity, mut grid, arrow_input) in selected_grid_query.iter_mut() {
+        for (entity, grid, arrow_input) in selected_grid_query.iter() {
             let mut direction = [0.; N];
             let mut is_pressed = false;
             let mut is_changed = false;
 
-            for (index, dimension) in grid.param().iter().enumerate() {
+            for (index, dimension) in grid.dimensions().iter().enumerate() {
                 if keys.pressed(dimension.negative_keycode()) { direction[index] -= 1.; is_pressed = true; }
                 if keys.pressed(dimension.positive_keycode()) { direction[index] += 1.; is_pressed = true; }
             }
@@ -44,17 +45,16 @@ pub mod update {
             if !is_pressed { continue; }
 
             let move_distance = arrow_input.arrow_speed * time.delta_secs();
-            let prev_data = grid.data();
-            let mut new_data = prev_data.clone();
+            let prev_t = grid.data();
+            let mut new_t = prev_t.clone();
             for i in 0..N {
-                new_data[i] = (new_data[i] + move_distance * direction[i]).clamp(0., 1.);
-                if new_data[i] != prev_data[i] { is_changed = true; }
+                new_t[i] = (new_t[i] + move_distance * direction[i]).clamp(0., 1.);
+                if new_t[i] != prev_t[i] { is_changed = true; }
             }
             
             if !is_changed { continue; }
 
-            grid.set_data(new_data);
-            commands.trigger_targets(EGridChanged(new_data), entity);
+            commands.trigger_targets(EGridChanged { t: new_t, tag: grid.tag() }, entity);
         }
     }
 }

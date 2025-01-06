@@ -235,6 +235,14 @@ impl NodeOrientation {
     }
 
 
+    pub fn apply_to_size(&self, size: Vec2) -> Vec2 {
+        match self {
+            Self::Zero | Self::OneHalf => size,
+            Self::OneForth | Self::ThreeForth => size.yx()
+        }
+    }
+
+
     pub fn set_justify(node: &mut Node, justify: Val) {
         match node.flex_direction {
             FlexDirection::Row | FlexDirection::RowReverse => {

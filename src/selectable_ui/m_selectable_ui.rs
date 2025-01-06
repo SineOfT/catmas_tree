@@ -4,6 +4,10 @@ use super::c_selectable_ui::{CSelectableUI, SelectableUIMarker};
 
 
 #[derive(Component)]
+pub struct MSelectableUI;
+
+
+#[derive(Component)]
 pub struct MSelectedUI;
 
 
@@ -11,27 +15,25 @@ pub mod update {
     use super::*;
 
 
-    pub fn update_selected_on_click<M: SelectableUIMarker>(
+    pub fn select_on_click(
         mut commands: Commands,
-        selectable_node_query: Query<(Entity, &Interaction), (With<CSelectableUI<M>>, Without<MSelectedUI>, Changed<Interaction>)>,
-        selected_node_query: Query<Entity, With<MSelectedUI>>
+        selectable_ui_query: Query<(Entity, &Interaction), (With<MSelectableUI>, Without<MSelectedUI>, Changed<Interaction>)>,
+        selected_ui_query: Query<Entity, With<MSelectedUI>>
     ) {
 
-        for (entity, interaction) in selectable_node_query.iter() {
+        for (entity, interaction) in selectable_ui_query.iter() {
             match *interaction {
                 Interaction::Pressed => {
-                    for selected_entity in selected_node_query.iter() {
+                    for selected_entity in selected_ui_query.iter() {
                         commands.entity(selected_entity).remove::<MSelectedUI>();
                     }
                     commands.entity(entity).insert(MSelectedUI);
-                    
-                }
+                },
                 Interaction::Hovered => { },
-                Interaction::None => { },
+                Interaction::None => { }
             }
         }
     }
-
 
     pub fn update_outline_on_selected(
         mut selected_node_query: Query<&mut Outline, Added<MSelectedUI>>

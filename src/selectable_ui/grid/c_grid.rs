@@ -1,7 +1,5 @@
 use bevy::prelude::*;
 
-use super::super::c_selectable_ui::SelectableUIMarker;
-
 
 pub enum GridDimension { X, Y, Z, W, NegX, NegY, NegZ, NegW }
 
@@ -34,10 +32,19 @@ impl GridDimension {
 }
 
 
-pub struct SelectableGrid<const N: usize>;
+#[derive(Component)]
+pub struct CGrid<const N: usize, T: Sync + Send + Copy = ()> {
+    dimensions: [GridDimension; N],
+    data: [f32; N],
+    tag: T
+}
 
-impl<const N: usize> SelectableUIMarker for SelectableGrid<N> {
-    type ConstructorParam = [GridDimension; N];
-    type Data = [f32; N];
-    const DEFAULT_DATA: Self::Data = [0.; N];
+impl<const N: usize, T: Sync + Send + Copy> CGrid<N, T> {
+    pub fn new(dimensions: [GridDimension; N], tag: T) -> Self {
+        Self { dimensions, data: [0.; N], tag }
+    }
+
+    pub fn dimensions(&self) -> &[GridDimension; N] { &self.dimensions }
+    pub fn data(&self) -> &[f32; N] { &self.data }
+    pub fn tag(&self) -> T { self.tag }
 }

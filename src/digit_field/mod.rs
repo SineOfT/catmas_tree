@@ -1,9 +1,11 @@
 use bevy::prelude::*;
 
 
-pub mod s_digit_field_entities;
-pub mod c_digit_field_data;
-pub mod e_digit_changed;
+pub use c_digit_field_entities::CDigitFieldEntities;
+
+
+mod c_digit_field_entities;
+mod c_digit_field_data;
 
 
 pub struct DigitFieldPlugin;

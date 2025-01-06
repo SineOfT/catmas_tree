@@ -1,12 +1,15 @@
 use bevy::prelude::*;
 
-use super::super::super::s_field_digit::FieldDigit;
+use super::super::super::s_field_digit::FieldDigits;
 
 
 #[derive(Component)]
-pub struct EDigitsChanged<const N: usize>(pub [FieldDigit; N]);
+pub struct EDigitsChanged<const N: usize, const D: usize, T: Sync + Send + Copy + 'static = ()> {
+    pub digits: FieldDigits<N, D>,
+    pub tag: T
+}
 
-impl<const N: usize> Event for EDigitsChanged<N> {
+impl<const N: usize, const D: usize, T: Sync + Send + Copy + 'static> Event for EDigitsChanged<N, D, T> {
     type Traversal = &'static Parent;
 
     const AUTO_PROPAGATE: bool = true;
@@ -14,4 +17,6 @@ impl<const N: usize> Event for EDigitsChanged<N> {
 
 
 #[derive(Event)]
-pub struct EDigitsUpdated<const N: usize>(pub [FieldDigit; N]);
+pub struct EDigitsUpdated<const N: usize, const D: usize> {
+    pub digits: FieldDigits<N, D>
+}

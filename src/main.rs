@@ -1,13 +1,14 @@
 use bevy::prelude::*;
 
 use lights_material::{LightsMaterial, LightMaskItem, LIGHT_MASK_COUNT, MAX_LIGHT_ALTER_COUNT};
-use color_picker::l_color_swatch::LColorSwatch;
+use color_picker::LColorSwatch;
 use c_node_size::{RRem, CNodeSize, NodeSizeOperator, NodeWidth, NodeHeight};
-use color_picker::c_color_picker_data::CColorPickerData;
+use color_picker::CColorPickerData;
 
 
 mod lights_material;
 mod continuous_slider;
+mod slider_field;
 mod color_picker;
 mod digit_field;
 mod selectable_ui;
@@ -15,8 +16,7 @@ mod selectable_ui;
 // mod em;
 mod c_node_size;
 mod s_field_digit;
-
-mod node_orientation;
+mod s_node_orientation;
 
 
 const LIGHTS_MENU_BG_COLOR: Color = Color::srgb(0.5, 0.5, 0.5);
@@ -32,7 +32,6 @@ fn main() {
             continuous_slider::ContinuousSliderPlugin,
             color_picker::ColorPickerPlugin,
         ))
-        .add_event::<digit_field::e_digit_changed::EDigitChanged>()
         .insert_resource(RRem(20.))
         .add_systems(Startup,
             (

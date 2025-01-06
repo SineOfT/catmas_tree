@@ -1,9 +1,10 @@
 use bevy::prelude::*;
 
+pub use c_continuous_slider_entities::CContinuousSliderEntities;
 
-pub mod e_slider_changed;
-pub mod s_continuous_slider_entities;
-pub mod c_slider_data;
+
+mod c_continuous_slider_data;
+mod c_continuous_slider_entities;
 
 
 pub struct ContinuousSliderPlugin;

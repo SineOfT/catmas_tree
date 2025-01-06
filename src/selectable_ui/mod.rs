@@ -1,26 +1,26 @@
 use bevy::prelude::*;
 
 use c_selectable_ui::{CSelectableUI, SelectableUIMarker};
+use m_selectable_ui::MSelectableUI;
 
 
 pub mod grid;
 pub mod digit_field;
-pub mod e_selected_changed;
 pub mod c_selectable_ui;
-pub mod m_selected_ui;
+pub mod m_selectable_ui;
 
 
 #[derive(Bundle)]
-pub struct SelectableUIBundle<M: SelectableUIMarker> {
-    ui: CSelectableUI<M>,
+pub struct SelectableUIBundle {
+    selectable: MSelectableUI,
     button: Button,
     outline: Outline
 }
 
-impl<M: SelectableUIMarker> SelectableUIBundle<M> {
-    pub fn new(ui: CSelectableUI<M>, outline_width: Val) -> Self {
+impl SelectableUIBundle {
+    pub fn new(outline_width: Val) -> Self {
         Self {
-            ui,
+            selectable: MSelectableUI,
             button: Button,
             outline: Outline {
                 width: outline_width,
@@ -31,17 +31,6 @@ impl<M: SelectableUIMarker> SelectableUIBundle<M> {
     }
 }
 
-
-fn implement_selectable_ui<M: SelectableUIMarker>(app: &mut App) {
-    app
-        .add_event::<e_selected_changed::ESelectedChanged<M>>()
-        .add_systems(Update,
-            (
-                c_selectable_ui::update::update_on_change::<M>,
-                m_selected_ui::update::update_selected_on_click::<M>
-            )
-        );
-}
 
 pub struct SelectableUIPlugin;
 
@@ -54,10 +43,9 @@ impl Plugin for SelectableUIPlugin {
             ))
             .add_systems(Update,
                 (
-                    m_selected_ui::update::update_outline_on_selected,
-                    m_selected_ui::update::update_outline_on_deselected,
-
-                    
+                    m_selectable_ui::update::select_on_click,
+                    m_selectable_ui::update::update_outline_on_selected,
+                    m_selectable_ui::update::update_outline_on_deselected,
                 )
             );
     }

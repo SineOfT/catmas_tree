@@ -1,13 +1,13 @@
 use bevy::prelude::*;
 
-use super::{ECursorChanged, EDigitsChanged, SelectableDigitField};
+use super::{ECursorChanged, EDigitsChanged, CDigitField};
 
 use super::super::{
     c_selectable_ui::CSelectableUI,
-    m_selected_ui::MSelectedUI
+    m_selectable_ui::MSelectedUI
 };
 
-use super::super::super::s_field_digit::FieldDigit;
+use super::super::super::s_field_digit::{FieldDigit, FieldDigits};
 
 
 
@@ -19,7 +19,10 @@ pub mod update {
     use super::*;
 
 
-    fn add_digit<const N: usize>(mut digits: [FieldDigit; N], cursor: usize, digit: FieldDigit) -> [FieldDigit; N] {
+    fn add_digit<const N: usize, const D: usize>(
+        mut digits: FieldDigits<N, D>, cursor: usize, digit: FieldDigit
+    ) -> FieldDigits<N, D> {
+
         for i in ((cursor+1)..N).rev() {
             digits[i] = digits[i - 1];
         }
@@ -27,7 +30,10 @@ pub mod update {
         return digits;
     } 
 
-    fn delete_digit<const N: usize>(mut digits: [FieldDigit; N], cursor: usize) -> [FieldDigit; N] {
+    fn delete_digit<const N: usize, const D: usize>(
+        mut digits: FieldDigits<N, D>, cursor: usize
+    ) -> FieldDigits<N, D> {
+
         for i in cursor..(N-1) {
             digits[i] = digits[i + 1];
         }
@@ -35,11 +41,17 @@ pub mod update {
         return digits;
     }
 
-    fn equal_digits<const N: usize>(prev_digits: &[FieldDigit; N], new_digits: &[FieldDigit; N]) -> bool {
+    fn equal_digits<const N: usize, const D: usize>(
+        prev_digits: &FieldDigits<N, D>, new_digits: &FieldDigits<N, D>
+    ) -> bool {
+
         prev_digits.iter().zip(new_digits.iter()).all(|(prev, new)| prev == new)
     }
 
-    fn clamp_digits<const N: usize>(mut digits: [FieldDigit; N], min_digits: &[FieldDigit; N], max_digits: &[FieldDigit; N]) -> [FieldDigit; N] {
+    fn clamp_digits<const N: usize, const D: usize>(
+        mut digits: FieldDigits<N, D>, min_digits: &FieldDigits<N, D>, max_digits: &FieldDigits<N, D>
+    ) -> FieldDigits<N, D> {
+
         let mut nearing = 0;
         
         for i in 0..N {
@@ -76,19 +88,14 @@ pub mod update {
         digits
     }
 
-    pub fn update_selected_key_input_field<const N: usize>(
+    pub fn update_selected_key_input_field<const N: usize, const D: usize>(
         mut commands: Commands,
         keys: Res<ButtonInput<KeyCode>>,
-        mut selected_digit_field_query: Query<(Entity, &mut CSelectableUI<SelectableDigitField<N>>, &CKeyInputField), With<MSelectedUI>>
+        selected_digit_field_query: Query<(Entity, &CDigitField<N, D>, &CKeyInputField), With<MSelectedUI>>
     ) {
 
-        for (entity, mut digit_field, key_input) in selected_digit_field_query.iter_mut() {                        
-            let param = digit_field.param();
-            let data = digit_field.data();
-
-            let decimal_position = param.decimal_position();
-            let prev_cursor = data.cursor();
-
+        for (entity, digit_field, key_input) in selected_digit_field_query.iter() {                        
+            let prev_cursor = digit_field.cursor();
             let mut new_cursor = prev_cursor as usize;
             let mut digit_inputs = Vec::new();
             let mut is_deleted = false;
@@ -111,9 +118,7 @@ pub mod update {
                     
                     KeyCode::ArrowLeft => { new_cursor = new_cursor.saturating_sub(1); is_pressed = true; },
                     KeyCode::ArrowRight => { new_cursor = (new_cursor + 1).min(N-1); is_pressed = true; },
-                    KeyCode::Period => { if let Some(decimal_position) = decimal_position {
-                        new_cursor = decimal_position + 1; is_pressed = true
-                    } },
+                    KeyCode::Period => { if D < N-1 { new_cursor = D + 1; is_pressed = true } },
                     _ => { }
                 }
             }
@@ -122,9 +127,9 @@ pub mod update {
 
             info!("pressed");
 
-            let min_digits = param.min_digits();
-            let max_digits = param.max_digits();
-            let prev_digits = data.digits();
+            let min_digits = digit_field.min_digits();
+            let max_digits = digit_field.max_digits();
+            let prev_digits = digit_field.digits();
             let mut new_digits = None;
 
             if is_deleted {
@@ -142,23 +147,14 @@ pub mod update {
                 new_digits = Some(clamp_digits(digits, min_digits, max_digits));
             }
 
-            let digits_changed = new_digits.map_or(
-                false,
-                |digits| !equal_digits(prev_digits, &digits)
-            );
-            let cursor_changed = prev_cursor != new_cursor;
-
-            let prev_data = digit_field.data_mut();
-
-            if digits_changed {
-                let new_digits = new_digits.unwrap();
-                prev_data.set_digits(new_digits.clone());
-                commands.trigger_targets(EDigitsChanged(new_digits), entity);
+            if let Some(new_digits) = new_digits {
+                if !equal_digits(prev_digits, &new_digits) {
+                    commands.trigger_targets(EDigitsChanged { digits: new_digits, tag: digit_field.tag() }, entity);
+                }
             }
 
-            if cursor_changed {
-                prev_data.set_cursor(new_cursor);
-                commands.trigger_targets(ECursorChanged(new_cursor), entity);
+            if prev_cursor != new_cursor {
+                commands.trigger_targets(ECursorChanged { cursor: new_cursor, tag: digit_field.tag() }, entity);
             }
         }
     }
