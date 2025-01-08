@@ -1,5 +1,7 @@
 #import bevy_ui::ui_vertex_output::UiVertexOutput;
 #import bevy_render::globals::Globals;
+#import "functions.wgsl"::overlay
+
 
 const LIGHT_MASK_R: u32 = 3;
 const LIGHT_MASK_G: u32 = 3;
@@ -29,10 +31,6 @@ struct LightMaskItem {
 @group(1) @binding(6) var<uniform> light_mask_items: array<LightMaskItem, LIGHT_MASK_COUNT>;
 @group(1) @binding(7) var<uniform> duration: f32;
 
-
-fn overlay(base: vec4<f32>, color: vec4<f32>) -> vec4<f32> {
-    return vec4(mix(base.rgb, color.rgb, color.a), 1f);
-}
 
 fn remap_if_in_range(range_from: vec2<f32>, range_to: vec2<f32>, t: f32) -> f32 {
     let remap = range_to.x + (t - range_from.x) * (range_to.y - range_to.x) / (range_from.y - range_from.x + EPSILON);

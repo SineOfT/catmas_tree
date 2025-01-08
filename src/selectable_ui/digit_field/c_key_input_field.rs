@@ -1,11 +1,13 @@
 use bevy::prelude::*;
 
-use super::{ECursorChanged, EDigitsChanged, CDigitField};
-
-use super::super::{
-    c_selectable_ui::CSelectableUI,
-    m_selectable_ui::MSelectedUI
+use super::{
+    CDigitField,
+    EDigitsChanged,
+    c_digit_field::CFieldCursor,
+    e_cursor_updated::ECursorUpdated
 };
+
+use super::super::m_selectable_ui::MSelectedUI;
 
 use super::super::super::s_field_digit::{FieldDigit, FieldDigits};
 
@@ -88,14 +90,14 @@ pub mod update {
         digits
     }
 
-    pub fn update_selected_key_input_field<const N: usize, const D: usize>(
+    pub fn update_selected_key_input_field<const N: usize, const D: usize, T: Sync + Send + Copy + 'static>(
         mut commands: Commands,
         keys: Res<ButtonInput<KeyCode>>,
-        selected_digit_field_query: Query<(Entity, &CDigitField<N, D>, &CKeyInputField), With<MSelectedUI>>
+        selected_digit_field_query: Query<(Entity, &CDigitField<N, D, T>, &CFieldCursor, &CKeyInputField), With<MSelectedUI>>
     ) {
 
-        for (entity, digit_field, key_input) in selected_digit_field_query.iter() {                        
-            let prev_cursor = digit_field.cursor();
+        for (entity, digit_field, field_cursor, key_input) in selected_digit_field_query.iter() {                        
+            let prev_cursor = field_cursor.cursor();
             let mut new_cursor = prev_cursor as usize;
             let mut digit_inputs = Vec::new();
             let mut is_deleted = false;
@@ -154,7 +156,7 @@ pub mod update {
             }
 
             if prev_cursor != new_cursor {
-                commands.trigger_targets(ECursorChanged { cursor: new_cursor, tag: digit_field.tag() }, entity);
+                commands.trigger_targets(ECursorUpdated { cursor: new_cursor }, entity);
             }
         }
     }

@@ -1,14 +1,30 @@
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    ecs::component::{StorageType, ComponentHooks}
+};
 
-use super::c_selectable_ui::{CSelectableUI, SelectableUIMarker};
+use super::e_ui_selected::{EUISelected, EUIDeselected};
 
 
 #[derive(Component)]
 pub struct MSelectableUI;
 
 
-#[derive(Component)]
 pub struct MSelectedUI;
+
+impl Component for MSelectedUI {
+    const STORAGE_TYPE: StorageType = StorageType::Table;
+
+    fn register_component_hooks(hooks: &mut ComponentHooks) {
+        hooks
+            .on_add(|mut world, entity, _component_id| {
+                world.trigger_targets(EUISelected, entity);
+            })
+            .on_remove(|mut world, entity, _component_id| {
+                world.trigger_targets(EUIDeselected, entity);
+            });
+    }
+}
 
 
 pub mod update {
@@ -34,25 +50,31 @@ pub mod update {
             }
         }
     }
+}
+
+
+pub mod trigger {
+    use super::*;
+    
 
     pub fn update_outline_on_selected(
-        mut selected_node_query: Query<&mut Outline, Added<MSelectedUI>>
+        trigger: Trigger<EUISelected>,
+        mut outline_query: Query<&mut Outline>
     ) {
 
-        for mut outline in selected_node_query.iter_mut() {
-            outline.color = Color::srgb(0., 0., 1.);
-        }
+        let Ok(mut outline)  = outline_query.get_mut(trigger.entity())
+            else { warn!("selected ui has no outline"); return; };
+        outline.color = Color::srgb(0., 0., 1.);
     }
 
     pub fn update_outline_on_deselected(
-        mut deselected: RemovedComponents<MSelectedUI>,
-        mut node_query: Query<&mut Outline>
+        trigger: Trigger<EUIDeselected>,
+        mut outline_query: Query<&mut Outline>
     ) {
 
-        for entity in deselected.read() {
-            let Ok(mut outline) = node_query.get_mut(entity)
-                else { warn!("deselected entity doesn't exist"); continue; };
-            outline.color = Color::NONE;
-        }
+        
+        let Ok(mut outline) = outline_query.get_mut(trigger.entity())
+            else { warn!("deselected ui has no outline"); return; };
+        outline.color = Color::NONE;
     }
 }

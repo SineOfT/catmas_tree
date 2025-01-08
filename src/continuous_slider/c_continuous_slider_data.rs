@@ -61,7 +61,7 @@ mod trigger {
 
 
     pub fn update_slider(
-        mut trigger: Trigger<EGridChanged<{CContinuousSliderEntities::DIMENSION_COUNT}>>,
+        mut trigger: Trigger<EGridChanged<{CContinuousSliderEntities::DIMENSION_COUNT}, ()>>,
         mut commands: Commands,
         mut continuous_slider_data_query: Query<&mut CContinuousSliderData>
     ) {

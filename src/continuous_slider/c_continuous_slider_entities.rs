@@ -1,10 +1,7 @@
 use bevy::prelude::*;
 
 use super::super::{
-    selectable_ui::{
-        SelectableUIBundle,
-        grid::{CGrid, CArrowInputGrid, EGridUpdated, GridDimension}
-    },
+    selectable_ui::grid::{CGrid, EGridUpdated, GridDimension},
     s_node_orientation::NodeOrientation,
     c_node_size::{CNodeSize, NodeSizeOperator, NodeJustify, NodeAlign},
 };
@@ -57,8 +54,16 @@ impl CContinuousSliderEntities {
             ))
             .id();
 
-        commands
-            .spawn((
+        let entity = CGrid::build(
+            commands,
+            orientation.apply_to_grid_dimensions(Self::DEFAULT_DIMENSIONS),
+            1.,
+            Val::Px(5.),
+            tag
+        );
+
+        commands.entity(entity)
+            .insert((
                 orientation.apply(Node {
                     flex_direction: FlexDirection::Column,
                     align_items: AlignItems::FlexStart,
@@ -67,14 +72,13 @@ impl CContinuousSliderEntities {
                 CNodeSize::<NodeJustify>::new(NodeSizeOperator::Em(0.5)),
                 length,
                 BackgroundColor(empty_color),
-                SelectableUIBundle::new(Val::Px(5.)),
-                CGrid::new(orientation.apply_to_grid_dimensions(Self::DEFAULT_DIMENSIONS), tag),
-                CArrowInputGrid::new(1.)
+                Self { hover_slider_entity, fill_slider_entity }
             ))
             .add_child(hover_slider_entity)
             .add_child(fill_slider_entity)
-            .observe(trigger::update_slider)
-            .id()
+            .observe(trigger::update_slider);
+
+        entity
     }
 }
 

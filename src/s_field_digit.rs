@@ -64,7 +64,7 @@ impl FieldDigit {
 }
 
 
-#[derive(Deref, DerefMut, Clone)]
+#[derive(Deref, DerefMut, Clone, Copy)]
 pub struct FieldDigits<const N: usize, const D: usize> {
     #[deref]
     digits: [FieldDigit; N]
@@ -92,7 +92,7 @@ impl<const N: usize, const D: usize> FieldDigits<N, D> {
         let mut digits = [FieldDigit::Zero; N];
         for i in 0..N {
             let digit_position = decimal_position - i as i32;
-            let digit_int = (value * 10_f32.powi(-digit_position) + 0.5) as i32 % 1;
+            let digit_int = (value * 10_f32.powi(-digit_position) + 0.05) as i32 % 10;
             digits[i] = FieldDigit::from_int(digit_int as u8);
         }
     

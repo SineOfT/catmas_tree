@@ -3,8 +3,8 @@ use bevy::prelude::*;
 use super::super::{
     c_node_size::{CNodeSize, NodeSizeOperator, NodeWidth, NodeHeight, NodeFontSize},
     selectable_ui::{
-        SelectableUIBundle,
-        digit_field::{ECursorUpdated, EDigitsUpdated, CDigitField, CKeyInputField}
+        digit_field::{CDigitField, ECursorUpdated, EDigitsUpdated},
+        e_ui_selected::{EUISelected, EUIDeselected}
     },
     s_field_digit::FieldDigits
 };
@@ -72,13 +72,24 @@ impl CDigitFieldEntities {
                     left: Val::Percent(0.),
                     ..default()
                 },
+                Visibility::Hidden,
                 BackgroundColor(Color::BLACK),
                 CNodeSize::<NodeHeight>::new(NodeSizeOperator::Em(0.1))
             ))
             .id();
 
-        let mut entity_commands = commands
-            .spawn((
+        let entity = CDigitField::build(
+            commands,
+            min_digits,
+            max_digits,
+            Val::Px(5.),
+            tag
+        );
+
+        let mut entity_commands = commands.entity(entity);
+
+        entity_commands
+            .insert((
                 Node {
                     flex_direction: FlexDirection::Column,
                     justify_content: JustifyContent::Center,
@@ -88,21 +99,20 @@ impl CDigitFieldEntities {
                 CNodeSize::<NodeWidth>::new(NodeSizeOperator::Em(N as f32 * CHARACTER_WIDTH)),
                 CNodeSize::<NodeHeight>::new(NodeSizeOperator::Em(1.)),
                 BackgroundColor(Color::WHITE),
-                SelectableUIBundle::new(Val::Px(5.)),
-                CDigitField::new(min_digits, max_digits, tag),
-                CKeyInputField,
                 Self { digits_entity, cursor_entity }
-            ));
+            ))
+            .add_child(digits_entity);
         
-        entity_commands.add_child(digits_entity);
         if let Some(decimal_entity) = decimal_entity { entity_commands.add_child(decimal_entity); }
-        entity_commands.add_child(cursor_entity);
-
-        entity_commands
-            .observe(trigger::update_digits_text::<N, D>)
-            .observe(trigger::update_cursor_node::<N>);
         
-        entity_commands.id()
+        entity_commands
+            .add_child(cursor_entity)
+            .observe(trigger::update_digits_text::<N, D>)
+            .observe(trigger::update_cursor_node::<N>)
+            .observe(trigger::show_cursor_on_selected)
+            .observe(trigger::hide_cursor_on_deselected);
+        
+        entity
     }
 
 
@@ -120,20 +130,22 @@ mod trigger {
         String::from_iter(digits.iter().map(|digit| digit.as_char()))
     }
 
+
     pub fn update_digits_text<const N: usize, const D: usize>(
         trigger: Trigger<EDigitsUpdated<N, D>>,
         digit_field_entities_query: Query<&CDigitFieldEntities>,
         mut text_query: Query<&mut Text>
     ) {
 
-        let Ok(digit_field_entities) = digit_field_entities_query.get(trigger.entity())
+        let Ok(entities) = digit_field_entities_query.get(trigger.entity())
             else { warn!("updated digits has no entities"); return; };
-
-        let Ok(mut text) = text_query.get_mut(digit_field_entities.digits_entity)
+        let Ok(mut text) = text_query.get_mut(entities.digits_entity)
             else { warn!("updated digit has no text"); return; };
 
         let digits = &trigger.event().digits;
         let digits_string = digits_to_string(digits);
+
+        info!(digits_string);
 
         text.0 = digits_string;
     }
@@ -145,14 +157,43 @@ mod trigger {
         mut node_query: Query<&mut Node>
     ) {
 
-        let Ok(digit_field_entities) = digit_field_entities_query.get(trigger.entity())
-        else { warn!("updated digits has no entities"); return; };
-
-        let Ok(mut node) = node_query.get_mut(digit_field_entities.cursor_entity)
+        let Ok(entities) = digit_field_entities_query.get(trigger.entity())
+            else { warn!("updated digits has no entities"); return; };
+        let Ok(mut node) = node_query.get_mut(entities.cursor_entity)
             else { warn!("updated cursor has no node"); return; };
 
         let cursor = trigger.event().cursor;
         
         node.left = Val::Percent(100. / (N as f32) * (cursor as f32));
+    }
+
+
+    pub fn show_cursor_on_selected(
+        trigger: Trigger<EUISelected>,
+        digit_field_entities_query: Query<&CDigitFieldEntities>,
+        mut visibility_query: Query<&mut Visibility>
+    ) {
+
+        let Ok(entities) = digit_field_entities_query.get(trigger.entity())
+            else { warn!("updated digits has no entities"); return; };
+        let Ok(mut visibility) = visibility_query.get_mut(entities.cursor_entity)
+            else { warn!("selected digit field has no visibility"); return; };
+
+        *visibility = Visibility::Inherited;
+    }
+
+
+    pub fn hide_cursor_on_deselected(
+        trigger: Trigger<EUIDeselected>,
+        digit_field_entities_query: Query<&CDigitFieldEntities>,
+        mut visibility_query: Query<&mut Visibility>
+    ) {
+
+        let Ok(entities) = digit_field_entities_query.get(trigger.entity())
+            else { warn!("updated digits has no entities"); return; };
+        let Ok(mut visibility) = visibility_query.get_mut(entities.cursor_entity)
+            else { warn!("selected digit field has no visibility"); return; };
+
+        *visibility = Visibility::Hidden;
     }
 }

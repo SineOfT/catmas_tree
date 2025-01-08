@@ -23,7 +23,7 @@ impl LightMaskItem {
 
 
 #[derive(AsBindGroup, Asset, TypePath, Clone)]
-pub struct LightsMaterial {
+pub struct LLights {
     #[texture(0)]
     #[sampler(1)]
     tree_sprite: Handle<Image>,
@@ -39,7 +39,7 @@ pub struct LightsMaterial {
     duration: f32
 }
 
-impl LightsMaterial {
+impl LLights {
     pub fn new(asset_server: &AssetServer, light_mask_items: [LightMaskItem; LIGHT_MASK_COUNT], duration: f32) -> Self {
         Self {
             tree_sprite: asset_server.load("tree.png"),
@@ -51,7 +51,7 @@ impl LightsMaterial {
     }
 }
 
-impl UiMaterial for LightsMaterial {
+impl UiMaterial for LLights {
     fn fragment_shader() -> ShaderRef {
         "lights_shader.wgsl".into()
     }

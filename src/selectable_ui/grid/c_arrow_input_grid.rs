@@ -24,12 +24,12 @@ pub mod update {
     use super::*;
 
 
-    pub fn update_selected_arrow_input_grid<const N: usize>(
+    pub fn update_selected_arrow_input_grid<const N: usize, T: Sync + Send + Copy + 'static>(
         // trigger: Trigger<KeyboardInput>,
         mut commands: Commands,
         time: Res<Time>,
         keys: Res<ButtonInput<KeyCode>>,
-        selected_grid_query: Query<(Entity, &CGrid<N>, &CArrowInputGrid), With<MSelectedUI>>
+        selected_grid_query: Query<(Entity, &CGrid<N, T>, &CArrowInputGrid), With<MSelectedUI>>
     ) {
 
         for (entity, grid, arrow_input) in selected_grid_query.iter() {
@@ -45,7 +45,7 @@ pub mod update {
             if !is_pressed { continue; }
 
             let move_distance = arrow_input.arrow_speed * time.delta_secs();
-            let prev_t = grid.data();
+            let prev_t = grid.t();
             let mut new_t = prev_t.clone();
             for i in 0..N {
                 new_t[i] = (new_t[i] + move_distance * direction[i]).clamp(0., 1.);

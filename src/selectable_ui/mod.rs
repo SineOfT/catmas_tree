@@ -1,13 +1,12 @@
 use bevy::prelude::*;
 
-use c_selectable_ui::{CSelectableUI, SelectableUIMarker};
 use m_selectable_ui::MSelectableUI;
 
 
 pub mod grid;
 pub mod digit_field;
-pub mod c_selectable_ui;
 pub mod m_selectable_ui;
+pub mod e_ui_selected;
 
 
 #[derive(Bundle)]
@@ -42,11 +41,9 @@ impl Plugin for SelectableUIPlugin {
                 digit_field::DigitFieldPlugin
             ))
             .add_systems(Update,
-                (
-                    m_selectable_ui::update::select_on_click,
-                    m_selectable_ui::update::update_outline_on_selected,
-                    m_selectable_ui::update::update_outline_on_deselected,
-                )
-            );
+                m_selectable_ui::update::select_on_click
+            )
+            .add_observer(m_selectable_ui::trigger::update_outline_on_selected)
+            .add_observer(m_selectable_ui::trigger::update_outline_on_deselected);
     }
 }

@@ -1,12 +1,11 @@
 use bevy::prelude::*;
 
-use lights_material::{LightsMaterial, LightMaskItem, LIGHT_MASK_COUNT, MAX_LIGHT_ALTER_COUNT};
-use color_picker::LColorSwatch;
+use l_lights::{LLights, LightMaskItem, LIGHT_MASK_COUNT, MAX_LIGHT_ALTER_COUNT};
 use c_node_size::{RRem, CNodeSize, NodeSizeOperator, NodeWidth, NodeHeight};
-use color_picker::CColorPickerData;
+use color_picker::{CColorPickerData, LColorSwatch};
 
 
-mod lights_material;
+mod l_lights;
 mod continuous_slider;
 mod slider_field;
 mod color_picker;
@@ -26,11 +25,9 @@ fn main() {
     App::new()
         .add_plugins((
             DefaultPlugins,
-            UiMaterialPlugin::<LightsMaterial>::default(),
-            selectable_ui::SelectableUIPlugin,
-            digit_field::DigitFieldPlugin,
-            continuous_slider::ContinuousSliderPlugin,
-            color_picker::ColorPickerPlugin,
+            UiMaterialPlugin::<LLights>::default(),
+            UiMaterialPlugin::<LColorSwatch>::default(),
+            selectable_ui::SelectableUIPlugin
         ))
         .insert_resource(RRem(20.))
         .add_systems(Startup,
@@ -48,18 +45,6 @@ fn main() {
                 c_node_size::update::update_node_sizes::<c_node_size::NodeFontSize>
             )
         )
-        // .add_systems(Update,
-        //     (
-        //         // continuous_slider::s_continuous_slider_entities::update::update_slider_on_selected_changed,
-
-        //         // digit_field::s_digit_field_entities::update::update_text_on_selected_changed::<1>,
-        //         // digit_field::s_digit_field_entities::update::update_text_on_selected_changed::<2>,
-        //         // digit_field::s_digit_field_entities::update::update_text_on_selected_changed::<3>,
-        //         // digit_field::s_digit_field_entities::update::update_text_on_selected_changed::<4>,
-        //         // digit_field::s_digit_field_entities::update::update_text_on_selected_changed::<5>,
-        //         // digit_field::s_digit_field_entities::update::update_text_on_selected_changed::<6>
-        //     )
-        // )
         .run();
 }
 
@@ -73,14 +58,14 @@ fn instantiate_camera(
 fn build(
     mut commands: Commands,
     asset_server: Res<AssetServer>,
-    mut lights_materials: ResMut<Assets<LightsMaterial>>,
+    mut lights_materials: ResMut<Assets<LLights>>,
     mut color_swatch_materials: ResMut<Assets<LColorSwatch>>
 ) {
 
     fn build_image(
         commands: &mut Commands,
         asset_server: &AssetServer,
-        lights_materials: &mut Assets<LightsMaterial>,
+        lights_materials: &mut Assets<LLights>,
         z_index: i32
     ) -> Entity {
 
@@ -104,7 +89,7 @@ fn build(
                     height: Val::VMin(100.),
                     ..default()
                 },
-                MaterialNode(lights_materials.add(LightsMaterial::new(&asset_server, light_mask_items, duration)))
+                MaterialNode(lights_materials.add(LLights::new(&asset_server, light_mask_items, duration)))
             ))
             .id()
     }

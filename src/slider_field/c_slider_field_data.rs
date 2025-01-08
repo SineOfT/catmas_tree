@@ -10,7 +10,7 @@ use super::super::{
     s_node_orientation::NodeOrientation,
     selectable_ui::{
         grid::EGridChanged,
-        digit_field::{ECursorChanged, ECursorUpdated, EDigitsChanged}
+        digit_field::EDigitsChanged
     },
     s_field_digit::FieldDigits
 };
@@ -60,8 +60,7 @@ impl CSliderFieldData {
         commands.entity(entity)
             .insert(Self::new(range))
             .observe(trigger::update_slider::<N, D>)
-            .observe(trigger::update_digits::<N, D>)
-            .observe(trigger::update_cursor);
+            .observe(trigger::update_digits::<N, D>);
 
         entity
     }
@@ -82,7 +81,7 @@ mod trigger {
 
 
     pub fn update_slider<const N: usize, const D: usize>(
-        mut trigger: Trigger<EGridChanged<{CSliderFieldEntities::DIMENSION_COUNT}>>,
+        mut trigger: Trigger<EGridChanged<{CSliderFieldEntities::DIMENSION_COUNT}, ()>>,
         mut commands: Commands,
         mut continuous_slider_data_query: Query<&mut CSliderFieldData>
     ) {
@@ -104,7 +103,7 @@ mod trigger {
 
 
     pub fn update_digits<const N: usize, const D: usize>(
-        mut trigger: Trigger<EDigitsChanged<N, D>>,
+        mut trigger: Trigger<EDigitsChanged<N, D, ()>>,
         mut commands: Commands,
         mut continuous_slider_data_query: Query<&mut CSliderFieldData>
     ) {
@@ -122,18 +121,5 @@ mod trigger {
         continuous_slider_data.value = value;
 
         commands.trigger_targets(ESliderFieldUpdated { t, digits }, entity);
-    }
-
-
-    pub fn update_cursor(
-        mut trigger: Trigger<ECursorChanged>,
-        mut commands: Commands
-    ) {
-
-        trigger.propagate(false);
-
-        let entity = trigger.entity();
-        let cursor = trigger.event().cursor;
-        commands.trigger_targets(ECursorUpdated { cursor }, entity);
     }
 }

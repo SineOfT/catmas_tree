@@ -2,7 +2,7 @@ use bevy::prelude::*;
 
 
 #[derive(Component)]
-pub struct EGridChanged<const N: usize, T: Sync + Send + Copy + 'static = ()> {
+pub struct EGridChanged<const N: usize, T: Sync + Send + Copy + 'static> {
     pub t: [f32; N],
     pub tag: T
 }

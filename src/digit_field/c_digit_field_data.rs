@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use super::c_digit_field_entities::CDigitFieldEntities;
 
 use super::super::{
-    selectable_ui::digit_field::{ECursorChanged, ECursorUpdated, EDigitsChanged, EDigitsUpdated},
+    selectable_ui::digit_field::{EDigitsChanged, EDigitsUpdated},
     s_field_digit::FieldDigits
 };
 
@@ -36,8 +36,7 @@ impl<const N: usize, const D: usize> CDigitFieldData<N, D> {
 
         commands.entity(entity)
             .insert(Self::new(entity))
-            .observe(trigger::update_digits::<N, D>)
-            .observe(trigger::update_cursor::<N, D>);
+            .observe(trigger::update_digits::<N, D>);
 
         entity
     }
@@ -49,7 +48,7 @@ mod trigger {
 
 
     pub fn update_digits<const N: usize, const D: usize>(
-        mut trigger: Trigger<EDigitsChanged<N, D>>,
+        mut trigger: Trigger<EDigitsChanged<N, D, ()>>,
         mut commands: Commands,
         mut digit_field_data_query: Query<&mut CDigitFieldData<N, D>>
     ) {
@@ -64,22 +63,5 @@ mod trigger {
         digit_field_data.digits = digits.clone();
 
         commands.trigger_targets(EDigitsUpdated { digits: digits.clone() }, digit_field_data.entity);
-    }
-
-
-    pub fn update_cursor<const N: usize, const D: usize>(
-        mut trigger: Trigger<ECursorChanged>,
-        mut commands: Commands,
-        digit_field_data_query: Query<&CDigitFieldData<N, D>>
-    ) {
-
-        trigger.propagate(false);
-
-        let Ok(digit_field_data) = digit_field_data_query.get(trigger.entity())
-            else { warn!("changed cursor doesn't have data parent"); return; };
-
-        let cursor = trigger.event().cursor;
-
-        commands.trigger_targets(ECursorUpdated { cursor }, digit_field_data.entity);
     }
 }

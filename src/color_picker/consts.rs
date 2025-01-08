@@ -1,7 +1,4 @@
-use super::super::{
-    s_field_digit::{FieldDigits, FieldDigit},
-    selectable_ui::grid::GridDimension
-};
+use super::super::s_field_digit::{FieldDigits, FieldDigit};
 
 
 pub const DIGIT_COUNT: usize = 3;

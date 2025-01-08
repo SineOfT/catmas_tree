@@ -1,5 +1,12 @@
 use bevy::prelude::*;
 
+use super::{
+    e_grid_changed::EGridUpdated,
+    c_arrow_input_grid::CArrowInputGrid
+};
+
+use super::super::SelectableUIBundle;
+
 
 pub enum GridDimension { X, Y, Z, W, NegX, NegY, NegZ, NegW }
 
@@ -33,18 +40,50 @@ impl GridDimension {
 
 
 #[derive(Component)]
-pub struct CGrid<const N: usize, T: Sync + Send + Copy = ()> {
+pub struct CGrid<const N: usize, T: Sync + Send + Copy + 'static> {
     dimensions: [GridDimension; N],
-    data: [f32; N],
+    t: [f32; N],
     tag: T
 }
 
-impl<const N: usize, T: Sync + Send + Copy> CGrid<N, T> {
-    pub fn new(dimensions: [GridDimension; N], tag: T) -> Self {
-        Self { dimensions, data: [0.; N], tag }
-    }
-
+impl<const N: usize, T: Sync + Send + Copy+ 'static> CGrid<N, T> {
     pub fn dimensions(&self) -> &[GridDimension; N] { &self.dimensions }
-    pub fn data(&self) -> &[f32; N] { &self.data }
+    pub fn t(&self) -> &[f32; N] { &self.t }
     pub fn tag(&self) -> T { self.tag }
+
+    pub fn build(
+        commands: &mut Commands,
+        dimensions: [GridDimension; N],
+        arrow_speed: f32,
+        outline_width: Val,
+        tag: T
+    ) -> Entity {
+
+        commands
+            .spawn((
+                SelectableUIBundle::new(outline_width),
+                CArrowInputGrid::new(arrow_speed),
+                Self { dimensions, t: [0.; N], tag }
+            ))
+            .observe(trigger::update_t::<N, T>)
+            .id()
+    }
+}
+
+
+mod trigger {
+    use super::*;
+
+
+    pub fn update_t<const N: usize, T: Sync + Send + Copy + 'static>(
+        trigger: Trigger<EGridUpdated<N>>,
+        mut grid_query: Query<&mut CGrid<N, T>>
+    ) {
+
+        let Ok(mut grid) = grid_query.get_mut(trigger.entity())
+            else { warn!("updated grid has no grid"); return; };
+        
+        let t = trigger.event().t;
+        grid.t = t;
+    }
 }

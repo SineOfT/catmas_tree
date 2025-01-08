@@ -3,15 +3,25 @@ use bevy::prelude::*;
 use super::{
     c_color_swatch_entities::CColorSwatchEntities,
     l_color_swatch::LColorSwatch,
+    e_color_picker_updated::{
+        EColorPickerHueUpdated,
+        EColorPickerAlphaUpdated,
+        EColorPickerWhitenessUpdated,
+        EColorPickerBlacknessUpdated,
+        EColorPickerValueUpdated
+    },
+    e_color_swatch_updated::{
+        EColorSwatchHueUpdated,
+        EColorSwatchAlphaUpdated,
+        EColorSwatchWhitenessUpdated,
+        EColorSwatchBlacknessUpdated,
+        EColorSwatchValueUpdated
+    },
     consts
 };
 
 use super::super::{
-    selectable_ui::{
-        grid::EGridChanged,
-        digit_field::EDigitsChanged
-    },
-    slider_field::CSliderFieldEntities,
+    slider_field::{CSliderFieldEntities, ESliderFieldUpdated},
     c_node_size::{CNodeSize, NodeSizeOperator, NodeWidth, NodeHeight, NodeJustify},
     s_node_orientation::NodeOrientation,
 };
@@ -21,7 +31,7 @@ use super::super::{
 pub struct CColorPickerEntities {
     color_display_entity: Entity,
     color_swatch_entity: Entity,
-    hue_t_slider_field_entity: Entity,
+    hue_deg_slider_field_entity: Entity,
     alpha_t_slider_field_entity: Entity
 }
 
@@ -61,7 +71,7 @@ impl CColorPickerEntities {
                 swatch_tag
             );
 
-        let hue_t_slider_field_entity =
+        let hue_deg_slider_field_entity =
             CSliderFieldEntities::build(
                 commands,
                 asset_server,
@@ -99,87 +109,129 @@ impl CColorPickerEntities {
                 },
                 width,
                 height,
-                Self { color_display_entity, color_swatch_entity, hue_t_slider_field_entity, alpha_t_slider_field_entity }
+                Self { color_display_entity, color_swatch_entity, hue_deg_slider_field_entity, alpha_t_slider_field_entity }
             ))
             .add_child(color_display_entity)
             .add_child(color_swatch_entity)
-            .add_child(hue_t_slider_field_entity)
+            .add_child(hue_deg_slider_field_entity)
             .add_child(alpha_t_slider_field_entity)
+            .observe(trigger::update_hue)
+            .observe(trigger::update_alpha)
+            .observe(trigger::update_whiteness)
+            .observe(trigger::update_blackness)
+            .observe(trigger::update_value)
             .id()
     }
 }
 
-// mod trigger {
-//     use super::*;
+mod trigger {
+    use super::*;
 
 
-//     pub fn propagate_hue_grid_changed(
-//         trigger: Trigger<EGridChanged<{CSliderFieldEntities::DIMENSION_COUNT}>>,
-//         mut commands: Commands
-//     ) {
+    pub fn update_hue(
+        trigger: Trigger<EColorPickerHueUpdated>,
+        mut commands: Commands,
+        color_picker_entities_query: Query<&CColorPickerEntities>,
+        mut bg_color_query: Query<&mut BackgroundColor>
+    ) {
 
-//         let entity = trigger.entity();
-//         let degree = trigger.event().0[0];
-//         commands.trigger_targets(EHueGridChanged(degree), entity);
-//     }
+        let Ok(entities) = color_picker_entities_query.get(trigger.entity())
+            else { warn!("updated color picker has no entities"); return; };
+        let Ok(mut color_display_bg_color) = bg_color_query.get_mut(entities.color_display_entity)
+            else { warn!("updated color picker has no color display"); return; };
 
-//     pub fn propagate_hue_digits_changed(
-//         trigger: Trigger<EDigitsChanged<{consts::DIGIT_COUNT}, {consts::DEG_DIGIT_DECIMAL_POSITION}>>,
-//         mut commands: Commands
-//     ) {
+        let EColorPickerHueUpdated { color, degree, t, digits } = trigger.event().clone();
+        color_display_bg_color.0 = color;
 
-//         let entity = trigger.entity();
-//         let digits = trigger.event().0.clone();
-//         commands.trigger_targets(EHueDigitsChanged(digits), entity);
-//     }
+        commands.trigger_targets(ESliderFieldUpdated { t, digits }, entities.hue_deg_slider_field_entity);
+        commands.trigger_targets(EColorSwatchHueUpdated { degree }, entities.color_swatch_entity);
+    }
 
-//     pub fn propagate_alpha_grid_changed(
-//         trigger: Trigger<EGridChanged<{CSliderFieldEntities::DIMENSION_COUNT}>>,
-//         mut commands: Commands
-//     ) {
 
-//         let entity = trigger.entity();
-//         let t = trigger.event().0[0];
-//         commands.trigger_targets(EAlphaGridChanged(t), entity);
-//     }
+    pub fn update_alpha(
+        trigger: Trigger<EColorPickerAlphaUpdated>,
+        mut commands: Commands,
+        color_picker_entities_query: Query<&CColorPickerEntities>,
+        mut bg_color_query: Query<&mut BackgroundColor>
+    ) {
 
-//     pub fn propagate_alpha_digits_changed(
-//         trigger: Trigger<EDigitsChanged<{consts::DIGIT_COUNT}, {consts::T_DIGIT_DECIMAL_POSITION}>>,
-//         mut commands: Commands
-//     ) {
+        let Ok(entities) = color_picker_entities_query.get(trigger.entity())
+            else { warn!("updated color picker has no entities"); return; };
+        let Ok(mut color_display_bg_color) = bg_color_query.get_mut(entities.color_display_entity)
+            else { warn!("updated color picker has no color display"); return; };
 
-//         let entity = trigger.entity();
-//         let digits = trigger.event().0.clone();
-//         commands.trigger_targets(EAlphaDigitsChanged(digits), entity);
-//     }
+        let EColorPickerAlphaUpdated { color, t, digits } = trigger.event().clone();
+        color_display_bg_color.0 = color;
 
-//     pub fn propagate_value_grid_changed(
-//         trigger: Trigger<EGridChanged<{CColorSwatchEntities::DIMENSION_COUNT}>>,
-//         mut commands: Commands
-//     ) {
+        commands.trigger_targets(ESliderFieldUpdated { t, digits }, entities.alpha_t_slider_field_entity);
+        commands.trigger_targets(EColorSwatchAlphaUpdated { t }, entities.color_swatch_entity);
+    }
 
-//         let entity = trigger.entity();
-//         let t = trigger.event().0;
-//         commands.trigger_targets(EValueGridChanged(t), entity);
-//     }
 
-//     pub fn propagate_whiteness_digits_changed(
-//         trigger: Trigger<EDigitsChanged<{consts::DIGIT_COUNT}, {consts::T_DIGIT_DECIMAL_POSITION}>>,
-//         mut commands: Commands
-//     ) {
+    pub fn update_whiteness(
+        trigger: Trigger<EColorPickerWhitenessUpdated>,
+        mut commands: Commands,
+        color_picker_entities_query: Query<&CColorPickerEntities>,
+        mut bg_color_query: Query<&mut BackgroundColor>
+    ) {
 
-//         let entity = trigger.entity();
-//         let digits = trigger.event().0.clone();
-//         commands.trigger_targets(EWhitenessDigitsChanged(digits), entity);
-//     }
+        let Ok(entities) = color_picker_entities_query.get(trigger.entity())
+            else { warn!("updated color picker has no entities"); return; };
+        let Ok(mut color_display_bg_color) = bg_color_query.get_mut(entities.color_display_entity)
+            else { warn!("updated color picker has no color display"); return; };
 
-//     pub fn propagate_blackness_digits_changed(
-//         trigger: Trigger<EDigitsChanged<{consts::DIGIT_COUNT}, {consts::T_DIGIT_DECIMAL_POSITION}>>,
-//         mut commands: Commands
-//     ) {
+        let EColorPickerWhitenessUpdated { color, t, blackness_t, digits } = trigger.event().clone();
+        color_display_bg_color.0 = color;
 
-//         let entity = trigger.entity();
-//         let digits = trigger.event().0.clone();
-//         commands.trigger_targets(EBlacknessDigitsChanged(digits), entity);
-//     }
-// }
+        commands.trigger_targets(EColorSwatchWhitenessUpdated { t, blackness_t, digits }, entities.color_swatch_entity);
+    }
+
+
+    pub fn update_blackness(
+        trigger: Trigger<EColorPickerBlacknessUpdated>,
+        mut commands: Commands,
+        color_picker_entities_query: Query<&CColorPickerEntities>,
+        mut bg_color_query: Query<&mut BackgroundColor>
+    ) {
+
+        let Ok(entities) = color_picker_entities_query.get(trigger.entity())
+            else { warn!("updated color picker has no entities"); return; };
+        let Ok(mut color_display_bg_color) = bg_color_query.get_mut(entities.color_display_entity)
+            else { warn!("updated color picker has no color display"); return; };
+
+        let EColorPickerBlacknessUpdated { color, t, whiteness_t, digits } = trigger.event().clone();
+        color_display_bg_color.0 = color;
+
+        commands.trigger_targets(EColorSwatchBlacknessUpdated { t, whiteness_t, digits }, entities.color_swatch_entity);
+    }
+
+
+    pub fn update_value(
+        trigger: Trigger<EColorPickerValueUpdated>,
+        mut commands: Commands,
+        color_picker_entities_query: Query<&CColorPickerEntities>,
+        mut bg_color_query: Query<&mut BackgroundColor>
+    ) {
+
+        let Ok(entities) = color_picker_entities_query.get(trigger.entity())
+            else { warn!("updated color picker has no entities"); return; };
+        let Ok(mut color_display_bg_color) = bg_color_query.get_mut(entities.color_display_entity)
+            else { warn!("updated color picker has no color display"); return; };
+
+        let EColorPickerValueUpdated {
+            color,
+            whiteness_t,
+            blackness_t,
+            whiteness_digits,
+            blackness_digits
+        } = trigger.event().clone();
+        color_display_bg_color.0 = color;
+
+        commands.trigger_targets(EColorSwatchValueUpdated {
+            whiteness_t,
+            blackness_t,
+            whiteness_digits,
+            blackness_digits
+        }, entities.color_swatch_entity);
+    }
+}

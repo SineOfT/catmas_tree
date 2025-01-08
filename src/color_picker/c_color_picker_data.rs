@@ -3,24 +3,29 @@ use bevy::prelude::*;
 use super::{
     c_color_picker_entities::CColorPickerEntities,
     c_color_swatch_entities::CColorSwatchEntities,
-    e_color_picker_updated::{EHueUpdated, EWhitenessUpdated, EBlacknessUpdated, EAlphaUpdated},
+    e_color_picker_updated::{
+        EColorPickerHueUpdated,
+        EColorPickerWhitenessUpdated,
+        EColorPickerBlacknessUpdated,
+        EColorPickerAlphaUpdated,
+        EColorPickerValueUpdated
+    },
     l_color_swatch::LColorSwatch,
     consts::{self, TFieldDigits, DegFieldDigits}
 };
 
 use super::super::{
     selectable_ui::{
-        digit_field::{ECursorChanged, EDigitsChanged},
-        grid::{EGridChanged}
+        digit_field::EDigitsChanged,
+        grid::EGridChanged
     },
     slider_field::CSliderFieldEntities,
-    c_node_size::{CNodeSize, NodeWidth, NodeHeight},
-    s_field_digit::FieldDigits
+    c_node_size::{CNodeSize, NodeWidth, NodeHeight}
 };
 
 
 #[derive(Clone, Copy)]
-enum ColorPickerTag {
+pub enum ColorPickerTag {
     Hue,
     Whiteness,
     Blackness,
@@ -61,7 +66,11 @@ impl CColorPickerData {
         );
 
         commands.entity(entity)
-            .insert(Self::new());
+            .insert(Self::new())
+            .observe(trigger::update_slider)
+            .observe(trigger::update_swatch)
+            .observe(trigger::update_t_digits)
+            .observe(trigger::update_deg_digits);
 
         entity
     }
@@ -92,12 +101,15 @@ mod trigger {
                 let degree = consts::get_degree_from_t(t);
                 let digits = DegFieldDigits::from_value(degree);
                 data.color.x = degree;
-                commands.trigger_targets(EHueUpdated { degree, t, digits}, entity);
+                let color = Color::Hwba(Hwba::from_vec4(data.color));
+                info!(degree);
+                commands.trigger_targets(EColorPickerHueUpdated { color, degree, t, digits}, entity);
             },
             ColorPickerTag::Alpha => {
                 let digits = TFieldDigits::from_value(t);
                 data.color.w = t;
-                commands.trigger_targets(EAlphaUpdated { t, digits }, entity);
+                let color = Color::Hwba(Hwba::from_vec4(data.color));
+                commands.trigger_targets(EColorPickerAlphaUpdated { color, t, digits }, entity);
             },
             _ => { warn!("uncovered match branch"); }
         }
@@ -117,8 +129,8 @@ mod trigger {
             else { warn!("changed slider doesn't have data parent"); return; };
 
         let event = trigger.event();
-        let whiteness_t = event.t[0];
-        let blackness_t = event.t[1];
+        let blackness_t = event.t[0];
+        let whiteness_t = event.t[1];
         let tag = event.tag;
 
         match tag {
@@ -127,8 +139,17 @@ mod trigger {
                 let blackness_digits = TFieldDigits::from_value(blackness_t);
                 data.color.y = whiteness_t;
                 data.color.z = blackness_t;
-                commands.trigger_targets(EWhitenessUpdated { t: whiteness_t, digits: whiteness_digits }, entity);
-                commands.trigger_targets(EBlacknessUpdated { t: blackness_t, digits: blackness_digits }, entity);
+                let color = Color::Hwba(Hwba::from_vec4(data.color));
+                commands.trigger_targets(
+                    EColorPickerValueUpdated {
+                        color,
+                        whiteness_t,
+                        blackness_t,
+                        whiteness_digits,
+                        blackness_digits
+                    },
+                    entity
+                );
             },
             _ => { warn!("uncovered match branch"); }
         }
@@ -140,6 +161,8 @@ mod trigger {
         mut commands: Commands,
         mut color_picker_data_query: Query<&mut CColorPickerData>
     ) {
+
+        info!("update deg digits");
 
         trigger.propagate(false);
 
@@ -155,7 +178,8 @@ mod trigger {
                 let degree = digits.to_value();
                 let t = consts::get_t_from_degree(degree);
                 data.color.x = degree;
-                commands.trigger_targets(EHueUpdated { degree, t, digits }, entity);
+                let color = Color::Hwba(Hwba::from_vec4(data.color));
+                commands.trigger_targets(EColorPickerHueUpdated { color, degree, t, digits }, entity);
             },
             _ => { warn!("uncovered match branch"); }
         }
@@ -167,6 +191,8 @@ mod trigger {
         mut commands: Commands,
         mut color_picker_data_query: Query<&mut CColorPickerData>
     ) {
+
+        info!("update t digits");
 
         trigger.propagate(false);
 
@@ -180,18 +206,23 @@ mod trigger {
         match tag {
             ColorPickerTag::Whiteness => {
                 let t = digits.to_value();
+                let blackness_t = data.color.z;
                 data.color.y = t;
-                commands.trigger_targets(EWhitenessUpdated { t, digits }, entity);
+                let color = Color::Hwba(Hwba::from_vec4(data.color));
+                commands.trigger_targets(EColorPickerWhitenessUpdated { color, t, blackness_t, digits }, entity);
             },
             ColorPickerTag::Blackness => {
                 let t = digits.to_value();
+                let whiteness_t = data.color.y;
                 data.color.z = t;
-                commands.trigger_targets(EBlacknessUpdated { t, digits }, entity);
+                let color = Color::Hwba(Hwba::from_vec4(data.color));
+                commands.trigger_targets(EColorPickerBlacknessUpdated { color, t, whiteness_t, digits }, entity);
             },
             ColorPickerTag::Alpha => {
                 let t = digits.to_value();
                 data.color.w = t;
-                commands.trigger_targets(EAlphaUpdated { t, digits }, entity);
+                let color = Color::Hwba(Hwba::from_vec4(data.color));
+                commands.trigger_targets(EColorPickerAlphaUpdated { color, t, digits }, entity);
             },
             _ => { warn!("uncovered match branch"); }
         }

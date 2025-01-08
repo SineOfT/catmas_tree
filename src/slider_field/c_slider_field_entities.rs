@@ -4,7 +4,7 @@ use super::e_slider_field_updated::ESliderFieldUpdated;
 
 use super::super::{
     selectable_ui::{
-        grid::{EGridUpdated, GridDimension},
+        grid::EGridUpdated,
         digit_field::{ECursorUpdated, EDigitsUpdated}
     },
     digit_field::CDigitFieldEntities,
@@ -23,7 +23,6 @@ pub struct CSliderFieldEntities {
 
 impl CSliderFieldEntities {
     pub const DIMENSION_COUNT: usize = CContinuousSliderEntities::DIMENSION_COUNT;
-    pub const DEFAULT_DIMENSIONS: [GridDimension; Self::DIMENSION_COUNT] = CContinuousSliderEntities::DEFAULT_DIMENSIONS;
 
 
     pub fn build<const N: usize, const D: usize, T: Sync + Send + Copy + 'static>(
@@ -96,13 +95,15 @@ mod trigger {
         continuous_slider_entities_query: Query<&CSliderFieldEntities>
     ) {
 
+        info!("update slider");
+
         let Ok(entities) = continuous_slider_entities_query.get(trigger.entity())
             else { warn!("updated slider has no entities"); return; };
             
-        let ESliderFieldUpdated { t, digits } = trigger.event();
+        let ESliderFieldUpdated { t, digits } = trigger.event().clone();
 
-        commands.trigger_targets(EGridUpdated { t: [*t] }, entities.slider_entity);
-        commands.trigger_targets(EDigitsUpdated { digits: digits.clone() }, entities.digit_field_entity);
+        commands.trigger_targets(EGridUpdated { t: [t] }, entities.slider_entity);
+        commands.trigger_targets(EDigitsUpdated { digits }, entities.digit_field_entity);
     }
 
     pub fn update_cursor(
@@ -115,19 +116,5 @@ mod trigger {
             else { warn!("updated crusor has no entities"); return; };
 
         commands.trigger_targets(trigger.event().clone(), entities.digit_field_entity);
-    }
-
-
-    pub fn update_slider_node(
-        trigger: Trigger<EGridUpdated<{CSliderFieldEntities::DIMENSION_COUNT}>>,
-        mut node_query: Query<&mut Node>
-    ) {
-
-        let Ok(mut node) = node_query.get_mut(trigger.entity())
-            else { warn!("updated slider has no node"); return; };
-        
-        let t = trigger.event().t[0];
-
-        NodeOrientation::set_justify(&mut node, Val::Percent(t * 100.));
     }
 }
